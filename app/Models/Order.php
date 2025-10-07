@@ -75,6 +75,22 @@ class Order extends Model
     }
 
     /**
+     * Relationship với Payments
+     */
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Get latest payment
+     */
+    public function latestPayment()
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
+    }
+
+    /**
      * Scope filter theo status
      */
     public function scopeByStatus($query, $status)

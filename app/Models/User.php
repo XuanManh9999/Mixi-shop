@@ -23,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
+        'is_admin',
         'email_verified_at',
         'remember_token',
     ];
@@ -59,5 +60,37 @@ class User extends Authenticatable
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new CustomResetPassword($token));
+    }
+
+    /**
+     * Relationship với Orders
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin()
+    {
+        return $this->is_admin == 1;
+    }
+
+    /**
+     * Scope for admin users
+     */
+    public function scopeAdmins($query)
+    {
+        return $query->where('is_admin', 1);
+    }
+
+    /**
+     * Scope for customer users
+     */
+    public function scopeCustomers($query)
+    {
+        return $query->where('is_admin', 0);
     }
 }

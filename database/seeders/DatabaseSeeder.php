@@ -13,11 +13,30 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Tạo user admin mặc định (nếu chưa có)
+        User::firstOrCreate(
+            ['email' => 'admin@mixishop.com'],
+            [
+                'name' => 'Admin',
+                'password' => bcrypt('admin123'),
+                'is_admin' => true,
+            ]
+        );
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Tạo user thường để test (nếu chưa có)
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => bcrypt('password'),
+                'is_admin' => false,
+            ]
+        );
+
+        // Seed categories và products
+        $this->call([
+            CategorySeeder::class,
+            ProductSeeder::class,
         ]);
     }
 }

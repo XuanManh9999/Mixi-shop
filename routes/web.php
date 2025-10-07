@@ -3,10 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\StatisticsController as AdminStatisticsController;
 
 // Route trang chủ
 Route::get('/', function () {
@@ -77,4 +80,28 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Quản lý mã giảm giá
     Route::resource('coupons', AdminCouponController::class);
     Route::post('/coupons/{coupon}/toggle-active', [AdminCouponController::class, 'toggleActive'])->name('coupons.toggle-active');
+    
+    // Quản lý thanh toán
+    Route::get('/payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+    Route::get('/payments/statistics', [AdminPaymentController::class, 'statistics'])->name('payments.statistics');
+    Route::get('/payments/export', [AdminPaymentController::class, 'export'])->name('payments.export');
+    Route::get('/payments/{payment}', [AdminPaymentController::class, 'show'])->name('payments.show');
+    Route::post('/payments/{payment}/mark-paid', [AdminPaymentController::class, 'markAsPaid'])->name('payments.mark-paid');
+    Route::post('/payments/{payment}/mark-failed', [AdminPaymentController::class, 'markAsFailed'])->name('payments.mark-failed');
+    
+    // Thống kê
+    Route::get('/statistics', [AdminStatisticsController::class, 'index'])->name('statistics.index');
+    Route::get('/statistics/products', [AdminStatisticsController::class, 'products'])->name('statistics.products');
+    Route::get('/statistics/customers', [AdminStatisticsController::class, 'customers'])->name('statistics.customers');
+    Route::get('/statistics/chart-data', [AdminStatisticsController::class, 'chartData'])->name('statistics.chart-data');
+});
+
+// Routes thanh toán
+Route::middleware('auth')->group(function () {
+    // VNPay
+    Route::post('/payment/vnpay/{order}', [PaymentController::class, 'createVNPayPayment'])->name('payment.vnpay');
+    Route::get('/payment/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('payment.vnpay.callback');
+    
+    // Thanh toán khi nhận hàng
+    Route::post('/payment/cash/{order}', [PaymentController::class, 'cashOnDelivery'])->name('payment.cash');
 });

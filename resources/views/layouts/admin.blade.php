@@ -303,7 +303,15 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">
+                            <a class="nav-link {{ request()->routeIs('admin.payments*') ? 'active' : '' }}" 
+                               href="{{ route('admin.payments.index') }}">
+                                <i class="fas fa-money-bill-wave"></i>
+                                Thanh toán
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.statistics*') ? 'active' : '' }}" 
+                               href="{{ route('admin.statistics.index') }}">
                                 <i class="fas fa-chart-bar"></i>
                                 Thống kê
                             </a>
