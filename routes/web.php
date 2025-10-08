@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
@@ -10,11 +11,13 @@ use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\CouponController as AdminCouponController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\StatisticsController as AdminStatisticsController;
+use App\Http\Controllers\ProductController as FrontProductController;
+use App\Http\Controllers\CategoryController as FrontCategoryController;
+use App\Http\Controllers\CheckoutController;
 
 // Route trang chủ
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/suggest', [HomeController::class, 'suggest'])->name('home.suggest');
 
 // Routes cho authentication
 Route::middleware('guest')->group(function () {
@@ -45,6 +48,19 @@ Route::middleware('auth')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 });
+
+// Routes frontend sản phẩm và danh mục
+Route::get('/products', [FrontProductController::class, 'index'])->name('products.index');
+Route::get('/products/{product:slug}', [FrontProductController::class, 'show'])->name('products.show');
+// Có thể mở rộng sau: xem theo danh mục
+Route::get('/c/{category:slug}', [FrontCategoryController::class, 'show'])->name('categories.show');
+// Cart page (render bằng JS + localStorage)
+Route::view('/cart', 'storefront.cart')->name('cart.index');
+
+// Checkout
+Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
+Route::get('/checkout/thank-you/{order}', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
 
 // Routes dành cho admin
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
