@@ -26,7 +26,7 @@
         </div>
         <div class="card-body text-end">
             <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">Tiếp tục chọn món</a>
-            <a href="{{ route('checkout.show') }}" class="btn btn-dark">Thanh toán</a>
+            <a href="{{ route('checkout.show') }}" class="btn btn-dark">Lên đơn</a>
         </div>
     </div>
 </div>

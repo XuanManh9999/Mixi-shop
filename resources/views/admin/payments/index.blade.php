@@ -45,6 +45,41 @@
     </div>
 </div>
 
+<!-- Order Status Stats -->
+<div class="row mb-4">
+    <div class="col-xl-6 col-md-6 mb-4">
+        <div class="stats-card warning">
+            <div class="stats-icon text-warning">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stats-number">{{ number_format($stats['orders_pending']) }}</div>
+            <div class="stats-label">Đơn Hàng Chờ Xác Nhận</div>
+            <div class="mt-2">
+                <a href="{{ route('admin.payments.index', ['order_status' => 'pending']) }}" 
+                   class="btn btn-sm btn-outline-warning">
+                    <i class="fas fa-eye me-1"></i>Xem chi tiết
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-6 col-md-6 mb-4">
+        <div class="stats-card info">
+            <div class="stats-icon text-info">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stats-number">{{ number_format($stats['orders_confirmed']) }}</div>
+            <div class="stats-label">Đơn Hàng Đã Xác Nhận</div>
+            <div class="mt-2">
+                <a href="{{ route('admin.payments.index', ['order_status' => 'confirmed']) }}" 
+                   class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-eye me-1"></i>Xem chi tiết
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Revenue Stats -->
 <div class="row mb-4">
     <div class="col-md-6">
@@ -98,13 +133,26 @@
                         </div>
                         
                         <div class="col-md-2">
-                            <label for="status" class="form-label">Trạng thái</label>
+                            <label for="status" class="form-label">TT Thanh toán</label>
                             <select class="form-select" id="status" name="status">
                                 <option value="">Tất cả</option>
                                 <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Chờ xử lý</option>
                                 <option value="paid" {{ request('status') === 'paid' ? 'selected' : '' }}>Đã thanh toán</option>
                                 <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Thất bại</option>
                                 <option value="refunded" {{ request('status') === 'refunded' ? 'selected' : '' }}>Đã hoàn tiền</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label for="order_status" class="form-label">TT Đơn hàng</label>
+                            <select class="form-select" id="order_status" name="order_status">
+                                <option value="">Tất cả</option>
+                                <option value="pending" {{ request('order_status') === 'pending' ? 'selected' : '' }}>Chờ xác nhận</option>
+                                <option value="confirmed" {{ request('order_status') === 'confirmed' ? 'selected' : '' }}>Đã xác nhận</option>
+                                <option value="preparing" {{ request('order_status') === 'preparing' ? 'selected' : '' }}>Đang chuẩn bị</option>
+                                <option value="shipping" {{ request('order_status') === 'shipping' ? 'selected' : '' }}>Đang giao hàng</option>
+                                <option value="delivered" {{ request('order_status') === 'delivered' ? 'selected' : '' }}>Đã giao hàng</option>
+                                <option value="cancelled" {{ request('order_status') === 'cancelled' ? 'selected' : '' }}>Đã hủy</option>
                             </select>
                         </div>
                         
@@ -197,15 +245,25 @@
                                             #{{ $payment->order_id }}
                                         </a>
                                     </td>
-                                    <td>{{ $payment->order->user->name ?? 'N/A' }}</td>
+                                    <td>
+                                        <div>{{ $payment->order->ship_full_name ?? ($payment->order->user->name ?? 'N/A') }}</div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-phone me-1"></i>{{ $payment->order->ship_phone ?? 'Chưa có SĐT' }}
+                                        </small>
+                                    </td>
                                     <td>
                                         <span class="badge bg-info">{{ $payment->provider_label }}</span>
                                     </td>
                                     <td class="fw-bold text-success">{{ $payment->formatted_amount }}</td>
                                     <td>
-                                        <span class="badge bg-{{ $payment->status_color }}">
-                                            {{ $payment->status_label }}
-                                        </span>
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="badge bg-{{ $payment->status_color }}">
+                                                {{ $payment->status_label }}
+                                            </span>
+                                            <span class="badge bg-{{ $payment->order->status_color }} badge-sm">
+                                                {{ $payment->order->status_label }}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td>
                                         <small class="text-muted">{{ $payment->vnp_TransactionNo ?? '-' }}</small>
@@ -220,11 +278,21 @@
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             
-                                            @if($payment->status === 'pending')
+                                            @if($payment->order->status === 'pending')
+                                                <form method="POST" action="{{ route('admin.payments.confirm-order', $payment) }}" 
+                                                      class="d-inline" onsubmit="return confirm('Xác nhận đơn hàng này?')">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-outline-primary" title="Xác nhận đơn hàng">
+                                                        <i class="fas fa-clipboard-check"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            
+                                            @if($payment->status === 'pending' && $payment->order->status === 'confirmed')
                                                 <form method="POST" action="{{ route('admin.payments.mark-paid', $payment) }}" 
                                                       class="d-inline" onsubmit="return confirm('Xác nhận thanh toán thành công?')">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-outline-success" title="Xác nhận">
+                                                    <button type="submit" class="btn btn-outline-success" title="Xác nhận thanh toán">
                                                         <i class="fas fa-check"></i>
                                                     </button>
                                                 </form>

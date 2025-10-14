@@ -153,6 +153,11 @@
             font-weight: 500;
         }
         
+        .badge-sm {
+            padding: 3px 8px;
+            font-size: 0.7rem;
+        }
+        
         .stats-card {
             background: white;
             border-radius: 12px;
@@ -188,6 +193,17 @@
         .stats-label {
             color: #64748b;
             font-weight: 500;
+        }
+        
+        .stats-change {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .stats-change i {
+            font-size: 0.8rem;
+            margin-right: 4px;
         }
         
         .alert {

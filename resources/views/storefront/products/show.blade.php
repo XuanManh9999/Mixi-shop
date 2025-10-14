@@ -35,15 +35,19 @@
                 @endif
             </div>
             <p class="mb-3">{{ $product->description }}</p>
-            <button class="btn btn-dark js-add-to-cart"
-                data-id="{{ $product->id }}"
-                data-slug="{{ $product->slug }}"
-                data-name="{{ $product->name }}"
-                data-price="{{ (float) $product->price }}"
-                data-image="{{ $product->main_image }}"
-                data-qty="1">
-                <i class="fa-solid fa-cart-plus me-2"></i>Thêm vào giỏ
-            </button>
+            <button
+  class="btn btn-dark js-add-to-cart position-relative"
+  type="button"
+  style="z-index:3"
+  data-id="{{ (string) $product->id }}"     {{-- để chắc là string --}}
+  data-slug="{{ $product->slug }}"
+  data-name="{{ $product->name }}"
+  data-price="{{ is_numeric($product->price ?? null) ? $product->price : ($product->price_raw ?? '') }}"  {{-- GIÁ thô --}}
+  data-image="{{ $product->main_image }}"
+  data-qty="1">
+  <i class="fa-solid fa-cart-plus me-2"></i>Thêm vào giỏ
+</button>
+
         </div>
     </div>
 

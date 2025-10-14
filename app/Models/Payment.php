@@ -147,7 +147,7 @@ class Payment extends Model
         // Cập nhật order status
         $this->order->update([
             'payment_status' => 'paid',
-            'status' => 'processing',
+            'status' => 'confirmed',
         ]);
     }
 

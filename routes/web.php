@@ -47,6 +47,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+    
+    // Quản lý đơn hàng của user
+    Route::get('/orders', [\App\Http\Controllers\OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [\App\Http\Controllers\OrderController::class, 'show'])->name('orders.show');
+    Route::patch('/orders/{order}/cancel', [\App\Http\Controllers\OrderController::class, 'cancel'])->name('orders.cancel');
 });
 
 // Routes frontend sản phẩm và danh mục
@@ -61,6 +66,12 @@ Route::view('/cart', 'storefront.cart')->name('cart.index');
 Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
 Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
 Route::get('/checkout/thank-you/{order}', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
+// Public coupon validate for checkout
+Route::get('/coupon/validate', [CheckoutController::class, 'validateCoupon'])->name('coupon.validate');
+
+// Tra cứu đơn hàng (không cần đăng nhập)
+Route::get('/track-order', [\App\Http\Controllers\OrderController::class, 'track'])->name('orders.track');
+Route::post('/track-order', [\App\Http\Controllers\OrderController::class, 'track']);
 
 // Routes dành cho admin
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -104,6 +115,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/payments/{payment}', [AdminPaymentController::class, 'show'])->name('payments.show');
     Route::post('/payments/{payment}/mark-paid', [AdminPaymentController::class, 'markAsPaid'])->name('payments.mark-paid');
     Route::post('/payments/{payment}/mark-failed', [AdminPaymentController::class, 'markAsFailed'])->name('payments.mark-failed');
+    Route::post('/payments/{payment}/confirm-order', [AdminPaymentController::class, 'confirmOrder'])->name('payments.confirm-order');
     
     // Thống kê
     Route::get('/statistics', [AdminStatisticsController::class, 'index'])->name('statistics.index');
@@ -113,11 +125,175 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 });
 
 // Routes thanh toán
-Route::middleware('auth')->group(function () {
-    // VNPay
-    Route::post('/payment/vnpay/{order}', [PaymentController::class, 'createVNPayPayment'])->name('payment.vnpay');
-    Route::get('/payment/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('payment.vnpay.callback');
-    
-    // Thanh toán khi nhận hàng
-    Route::post('/payment/cash/{order}', [PaymentController::class, 'cashOnDelivery'])->name('payment.cash');
+// VNPay - không cần auth vì có thể thanh toán không cần đăng nhập
+Route::get('/payment/vnpay/{order}', [PaymentController::class, 'createVNPayPayment'])->name('payment.vnpay');
+Route::get('/payment/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('payment.vnpay.callback');
+Route::get('/payment/vnpay/return', [PaymentController::class, 'vnpayReturn'])->name('payment.vnpay.return');
+
+// Alternative callback routes để test
+Route::any('/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('vnpay.callback.alt');
+Route::any('/vnpay/return', [PaymentController::class, 'vnpayReturn'])->name('vnpay.return.alt');
+Route::any('/callback', [PaymentController::class, 'vnpayCallback'])->name('callback.alt');
+
+// Thanh toán khi nhận hàng
+Route::post('/payment/cash/{order}', [PaymentController::class, 'cashOnDelivery'])->name('payment.cash');
+
+// Debug route để test VNPay callback
+Route::get('/test-vnpay-callback', function(\Illuminate\Http\Request $request) {
+    return response()->json([
+        'message' => 'VNPay callback route is working',
+        'all_params' => $request->all(),
+        'url' => $request->fullUrl()
+    ]);
 });
+
+// Test page
+Route::get('/test-vnpay', function() {
+    return view('test-vnpay');
+});
+
+// Test VNPay return route
+Route::get('/test-vnpay-return', function() {
+    return response()->json([
+        'message' => 'VNPay return route is working!',
+        'route_name' => 'test-vnpay-return',
+        'timestamp' => now()
+    ]);
+});
+
+// Test PaymentController vnpayReturn method
+Route::get('/test-payment-return', [PaymentController::class, 'vnpayReturn']);
+
+// Test image upload
+Route::get('/test-upload', function() {
+    return view('test-upload');
+});
+
+Route::post('/test-upload', function(\Illuminate\Http\Request $request) {
+    if ($request->hasFile('image')) {
+        $image = $request->file('image');
+        $imageName = 'products/' . time() . '_test_' . \Illuminate\Support\Str::random(10) . '.' . $image->getClientOriginalExtension();
+        $image->storeAs('public', $imageName);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Upload thành công!',
+            'path' => 'storage/' . $imageName,
+            'full_url' => asset('storage/' . $imageName)
+        ]);
+    }
+    
+    return response()->json([
+        'success' => false,
+        'message' => 'Không có file được upload'
+    ]);
+});
+
+// Test Order model
+Route::get('/test-order', function() {
+    $order = \App\Models\Order::first();
+    return response()->json([
+        'status' => $order->status,
+        'status_label' => $order->status_label,
+        'status_color' => $order->status_color
+    ]);
+});
+
+// Test direct VNPay return simulation
+Route::get('/direct-vnpay-test', function(\Illuminate\Http\Request $request) {
+    // Simulate VNPay return parameters
+    $testParams = [
+        'vnp_Amount' => '32000000',
+        'vnp_BankCode' => 'NCB',
+        'vnp_BankTranNo' => 'VNP15202237',
+        'vnp_CardType' => 'ATM',
+        'vnp_OrderInfo' => 'Thanh toan don hang #19 - MixiShop',
+        'vnp_PayDate' => '20251014104337',
+        'vnp_ResponseCode' => '00',
+        'vnp_TmnCode' => '58X4B4HP',
+        'vnp_TransactionNo' => '15202237',
+        'vnp_TransactionStatus' => '00',
+        'vnp_TxnRef' => '19_1760413284',
+        'vnp_SecureHash' => 'd18ca40aafbbca5d07a0d74e79fc4999880c9d1aba60cff77871582344229c87d60bbf88a09ebb025176797b332c4abda0e5814b4ad3f92d4c5d0d3e652a0b3c'
+    ];
+    
+    // Create a new request with test parameters
+    $testRequest = new \Illuminate\Http\Request($testParams);
+    
+    // Call PaymentController vnpayReturn method
+    $paymentController = app(\App\Http\Controllers\PaymentController::class);
+    return $paymentController->vnpayReturn($testRequest);
+});
+
+// Simulate VNPay callback success để test
+Route::get('/simulate-vnpay-success/{order}', function(\App\Models\Order $order) {
+    // Tìm payment pending của order này
+    $payment = \App\Models\Payment::where('order_id', $order->id)
+                                  ->where('provider', 'vnpay')
+                                  ->where('status', 'pending')
+                                  ->latest()
+                                  ->first();
+    
+    if (!$payment) {
+        return redirect()->route('checkout.thankyou', ['order' => $order->id])
+                       ->with('error', 'Không tìm thấy payment record!');
+    }
+    
+    // Mô phỏng callback thành công
+    $mockCallbackData = [
+        'vnp_Amount' => ($order->total_amount * 100),
+        'vnp_BankCode' => 'NCB',
+        'vnp_BankTranNo' => 'VNP' . time(),
+        'vnp_CardType' => 'ATM',
+        'vnp_OrderInfo' => 'Thanh toan don hang #' . $order->id,
+        'vnp_PayDate' => date('YmdHis'),
+        'vnp_ResponseCode' => '00', // Success
+        'vnp_TmnCode' => config('services.vnpay.tmn_code'),
+        'vnp_TransactionNo' => time(),
+        'vnp_TxnRef' => $order->id . '_' . time(),
+    ];
+    
+    // Cập nhật payment
+    $payment->update([
+        'vnp_TransactionNo' => $mockCallbackData['vnp_TransactionNo'],
+        'vnp_BankCode' => $mockCallbackData['vnp_BankCode'],
+        'vnp_CardType' => $mockCallbackData['vnp_CardType'],
+        'vnp_ResponseCode' => $mockCallbackData['vnp_ResponseCode'],
+        'vnp_PayDate' => \Carbon\Carbon::createFromFormat('YmdHis', $mockCallbackData['vnp_PayDate']),
+        'raw_callback' => json_encode($mockCallbackData),
+    ]);
+    
+    // Mark as paid
+    $payment->markAsPaid($mockCallbackData);
+    
+    return redirect()->route('checkout.thankyou', ['order' => $order->id])
+                   ->with('success', 'Thanh toán thành công! (Mô phỏng)');
+})->name('simulate.vnpay.success');
+
+// Fallback route để bắt tất cả requests không khớp (đặt cuối cùng)
+// TEMPORARILY DISABLED FOR DEBUGGING
+/*
+Route::fallback(function(\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info('404 Request captured:', [
+        'url' => $request->fullUrl(),
+        'method' => $request->method(),
+        'path' => $request->path(),
+        'all_params' => $request->all(),
+        'user_agent' => $request->userAgent()
+    ]);
+    
+    // Nếu là VNPay return/callback, xử lý trực tiếp
+    if (str_contains($request->path(), 'vnpay') || str_contains($request->path(), 'callback')) {
+        $paymentController = app(\App\Http\Controllers\PaymentController::class);
+        
+        // Kiểm tra có tham số VNPay không
+        if ($request->has('vnp_TxnRef')) {
+            return $paymentController->vnpayReturn($request);
+        }
+        
+        return $paymentController->vnpayCallback($request);
+    }
+    
+    return response()->view('errors.404', [], 404);
+});
+*/

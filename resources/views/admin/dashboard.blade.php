@@ -32,8 +32,21 @@
             <div class="stats-icon text-warning">
                 <i class="fas fa-shopping-cart"></i>
             </div>
-            <div class="stats-number">0</div>
+            <div class="stats-number">{{ $ordersToday }}</div>
             <div class="stats-label">Đơn hàng hôm nay</div>
+            <div class="stats-change">
+                @if($ordersChange > 0)
+                    <i class="fas fa-arrow-up text-success"></i>
+                    <span class="text-success">+{{ number_format($ordersChange, 1) }}%</span>
+                @elseif($ordersChange < 0)
+                    <i class="fas fa-arrow-down text-danger"></i>
+                    <span class="text-danger">{{ number_format($ordersChange, 1) }}%</span>
+                @else
+                    <i class="fas fa-minus text-muted"></i>
+                    <span class="text-muted">0%</span>
+                @endif
+                <small class="text-muted ms-1">so với hôm qua</small>
+            </div>
         </div>
     </div>
 
@@ -42,8 +55,21 @@
             <div class="stats-icon text-info">
                 <i class="fas fa-dollar-sign"></i>
             </div>
-            <div class="stats-number">0₫</div>
+            <div class="stats-number">{{ number_format($revenueToday, 0, ',', '.') }}₫</div>
             <div class="stats-label">Doanh thu hôm nay</div>
+            <div class="stats-change">
+                @if($revenueChange > 0)
+                    <i class="fas fa-arrow-up text-success"></i>
+                    <span class="text-success">+{{ number_format($revenueChange, 1) }}%</span>
+                @elseif($revenueChange < 0)
+                    <i class="fas fa-arrow-down text-danger"></i>
+                    <span class="text-danger">{{ number_format($revenueChange, 1) }}%</span>
+                @else
+                    <i class="fas fa-minus text-muted"></i>
+                    <span class="text-muted">0%</span>
+                @endif
+                <small class="text-muted ms-1">so với hôm qua</small>
+            </div>
         </div>
     </div>
 </div>

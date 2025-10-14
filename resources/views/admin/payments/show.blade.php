@@ -29,8 +29,11 @@
                     
                     <div class="col-md-6 mb-3">
                         <label class="text-muted">Khách Hàng</label>
-                        <div class="fw-bold">{{ $payment->order->user->name ?? 'N/A' }}</div>
-                        <small class="text-muted">{{ $payment->order->user->email ?? '' }}</small>
+                        <div class="fw-bold">{{ $payment->order->ship_full_name ?? ($payment->order->user->name ?? 'N/A') }}</div>
+                        <small class="text-muted d-block">{{ $payment->order->user->email ?? '' }}</small>
+                        <small class="text-muted d-block">
+                            <i class="fas fa-phone me-1"></i>{{ $payment->order->ship_phone ?? 'Chưa có SĐT' }}
+                        </small>
                     </div>
                     
                     <div class="col-md-6 mb-3">
@@ -123,7 +126,17 @@
                 <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Thao Tác</h5>
             </div>
             <div class="card-body">
-                @if($payment->status === 'pending')
+                @if($payment->order->status === 'pending')
+                    <form method="POST" action="{{ route('admin.payments.confirm-order', $payment) }}" 
+                          onsubmit="return confirm('Xác nhận đơn hàng này?')">
+                        @csrf
+                        <button type="submit" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-clipboard-check me-2"></i>Xác Nhận Đơn Hàng
+                        </button>
+                    </form>
+                @endif
+                
+                @if($payment->status === 'pending' && $payment->order->status === 'confirmed')
                     <form method="POST" action="{{ route('admin.payments.mark-paid', $payment) }}" 
                           onsubmit="return confirm('Xác nhận thanh toán thành công?')">
                         @csrf
@@ -139,7 +152,7 @@
                             <i class="fas fa-times me-2"></i>Đánh Dấu Thất Bại
                         </button>
                     </form>
-                @else
+                @elseif($payment->status !== 'pending')
                     <div class="alert alert-info mb-0">
                         <i class="fas fa-info-circle me-2"></i>
                         Không thể thay đổi trạng thái thanh toán đã hoàn tất.

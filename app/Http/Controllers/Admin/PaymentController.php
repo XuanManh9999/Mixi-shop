@@ -36,6 +36,13 @@ class PaymentController extends Controller
             $query->where('status', $request->get('status'));
         }
 
+        // Filter theo order status
+        if ($request->filled('order_status')) {
+            $query->whereHas('order', function($q) use ($request) {
+                $q->where('status', $request->get('order_status'));
+            });
+        }
+
         // Filter theo ngày
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->get('date_from'));
@@ -62,6 +69,13 @@ class PaymentController extends Controller
             'today_amount' => Payment::where('status', 'paid')
                                     ->whereDate('paid_at', today())
                                     ->sum('amount'),
+            // Thống kê theo trạng thái đơn hàng
+            'orders_pending' => Payment::whereHas('order', function($q) {
+                $q->where('status', 'pending');
+            })->count(),
+            'orders_confirmed' => Payment::whereHas('order', function($q) {
+                $q->where('status', 'confirmed');
+            })->count(),
         ];
 
         return view('admin.payments.index', compact('payments', 'stats'));
@@ -104,6 +118,25 @@ class PaymentController extends Controller
         ]);
 
         return back()->with('success', 'Đã xác nhận thanh toán thành công!');
+    }
+
+    /**
+     * Confirm order (change status from pending to confirmed)
+     */
+    public function confirmOrder(Payment $payment)
+    {
+        $order = $payment->order;
+        
+        if ($order->status !== 'pending') {
+            return back()->with('error', 'Đơn hàng đã được xác nhận hoặc không ở trạng thái chờ xác nhận!');
+        }
+
+        // Cập nhật trạng thái đơn hàng
+        $order->update([
+            'status' => 'confirmed',
+        ]);
+
+        return back()->with('success', 'Đã xác nhận đơn hàng thành công!');
     }
 
     /**

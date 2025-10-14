@@ -1,0 +1,5 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#007bff" stroke="#0056b3" stroke-width="2"/>
+  <text x="200" y="140" font-family="Arial, sans-serif" font-size="20" fill="white" text-anchor="middle">Test Product</text>
+  <text x="200" y="170" font-family="Arial, sans-serif" font-size="16" fill="#e3f2fd" text-anchor="middle">Sample Image</text>
+</svg>

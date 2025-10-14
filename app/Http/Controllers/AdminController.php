@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Order;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -18,7 +20,37 @@ class AdminController extends Controller
         $totalAdmins = User::where('is_admin', 1)->count();
         $recentUsers = User::orderBy('created_at', 'desc')->limit(5)->get();
         
-        return view('admin.dashboard', compact('totalUsers', 'totalAdmins', 'recentUsers'));
+        // Thống kê đơn hàng và doanh thu hôm nay
+        $ordersToday = Order::whereDate('created_at', today())->count();
+        $ordersYesterday = Order::whereDate('created_at', today()->subDay())->count();
+        
+        // Doanh thu hôm nay từ các đơn hàng đã thanh toán
+        $revenueToday = Order::whereDate('created_at', today())
+                            ->where('payment_status', 'paid')
+                            ->sum('total_amount');
+        
+        $revenueYesterday = Order::whereDate('created_at', today()->subDay())
+                                ->where('payment_status', 'paid')
+                                ->sum('total_amount');
+        
+        // Tính % thay đổi
+        $ordersChange = $ordersYesterday > 0 
+            ? (($ordersToday - $ordersYesterday) / $ordersYesterday) * 100 
+            : ($ordersToday > 0 ? 100 : 0);
+            
+        $revenueChange = $revenueYesterday > 0 
+            ? (($revenueToday - $revenueYesterday) / $revenueYesterday) * 100 
+            : ($revenueToday > 0 ? 100 : 0);
+        
+        return view('admin.dashboard', compact(
+            'totalUsers', 
+            'totalAdmins', 
+            'recentUsers',
+            'ordersToday',
+            'revenueToday',
+            'ordersChange',
+            'revenueChange'
+        ));
     }
 
     /**

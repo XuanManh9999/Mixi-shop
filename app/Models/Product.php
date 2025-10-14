@@ -79,8 +79,12 @@ class Product extends Model
      */
     public function scopeSearch($query, $term)
     {
-        return $query->where('name', 'like', "%{$term}%")
-                    ->orWhere('description', 'like', "%{$term}%");
+        // Nhóm điều kiện tìm kiếm để không phá vỡ các where trước đó (active, inStock, byCategory, ...)
+        return $query->where(function ($q) use ($term) {
+            $q->where('name', 'like', "%{$term}%")
+              ->orWhere('description', 'like', "%{$term}%")
+              ->orWhere('slug', 'like', "%{$term}%");
+        });
     }
 
     /**
@@ -115,7 +119,7 @@ class Product extends Model
         if ($this->thumbnail_url) {
             return asset($this->thumbnail_url);
         }
-        return asset('images/no-image.png');
+        return asset('images/no-image.svg');
     }
 
     /**

@@ -178,4 +178,5 @@ class Order extends Model
     {
         return $this->orderItems->sum('quantity');
     }
+
 }
