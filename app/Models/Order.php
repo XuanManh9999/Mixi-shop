@@ -28,6 +28,7 @@ class Order extends Model
         'ship_ward',
         'note',
         'placed_at',
+        'confirmed_at',
         'created_at',
         'updated_at'
     ];
@@ -38,6 +39,7 @@ class Order extends Model
         'shipping_fee' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'placed_at' => 'datetime',
+        'confirmed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -207,6 +209,96 @@ class Order extends Model
         $timeLeft = $expireTime->diffInSeconds(now(), false);
         
         return max(0, -$timeLeft); // Trả về 0 nếu đã hết hạn
+    }
+
+    /**
+     * Kiểm tra đơn hàng pending đã hết hạn xác nhận chưa (15 phút)
+     */
+    public function isPendingExpired()
+    {
+        if ($this->status !== 'pending') {
+            return false;
+        }
+        
+        $expireTime = $this->created_at->addMinutes(15);
+        return now()->greaterThan($expireTime);
+    }
+
+    /**
+     * Kiểm tra đơn hàng confirmed đã hết hạn thanh toán chưa (15 phút)
+     */
+    public function isConfirmedExpired()
+    {
+        if ($this->status !== 'confirmed' || $this->payment_status !== 'unpaid' || !$this->confirmed_at) {
+            return false;
+        }
+        
+        $expireTime = $this->confirmed_at->addMinutes(15);
+        return now()->greaterThan($expireTime);
+    }
+
+    /**
+     * Kiểm tra đơn hàng có cần tự động hủy không
+     */
+    public function shouldAutoCancel()
+    {
+        return $this->isPendingExpired() || $this->isConfirmedExpired();
+    }
+
+    /**
+     * Lấy thời gian còn lại để xác nhận (tính bằng giây)
+     */
+    public function getPendingTimeLeftAttribute()
+    {
+        if ($this->status !== 'pending') {
+            return 0;
+        }
+        
+        $expireTime = $this->created_at->addMinutes(15);
+        $timeLeft = $expireTime->diffInSeconds(now(), false);
+        
+        return max(0, -$timeLeft); // Trả về 0 nếu đã hết hạn
+    }
+
+    /**
+     * Lấy thời gian còn lại để thanh toán sau khi confirmed (tính bằng giây)
+     */
+    public function getConfirmedTimeLeftAttribute()
+    {
+        if ($this->status !== 'confirmed' || $this->payment_status !== 'unpaid' || !$this->confirmed_at) {
+            return 0;
+        }
+        
+        $expireTime = $this->confirmed_at->addMinutes(15);
+        $timeLeft = $expireTime->diffInSeconds(now(), false);
+        
+        return max(0, -$timeLeft); // Trả về 0 nếu đã hết hạn
+    }
+
+    /**
+     * Tự động hủy đơn hàng
+     */
+    public function autoCancel($reason = 'Tự động hủy do hết thời gian')
+    {
+        $this->update([
+            'status' => 'cancelled',
+            'note' => ($this->note ? $this->note . ' | ' : '') . $reason
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Xác nhận đơn hàng và set confirmed_at
+     */
+    public function confirmOrder()
+    {
+        $this->update([
+            'status' => 'confirmed',
+            'confirmed_at' => now()
+        ]);
+        
+        return true;
     }
 
 }

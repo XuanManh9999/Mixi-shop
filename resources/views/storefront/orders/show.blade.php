@@ -40,12 +40,47 @@
                         <div class="col-md-6">
                             <p><strong>Ngày đặt hàng:</strong> {{ $order->created_at->format('d/m/Y H:i:s') }}</p>
                             <p><strong>Phương thức thanh toán:</strong> {{ $order->payment_method_label }}</p>
-                            @if($order->canPayVNPay())
-                                <div class="alert alert-warning">
+                            {{-- Countdown cho đơn hàng pending (chờ xác nhận) --}}
+                            @if($order->status === 'pending' && !$order->isPendingExpired())
+                                <div class="alert alert-info">
                                     <i class="fas fa-clock me-2"></i>
-                                    <strong>Lưu ý:</strong> Đơn hàng sẽ tự động hủy sau 15 phút nếu chưa thanh toán.
+                                    <strong>Chờ xác nhận:</strong> Đơn hàng sẽ tự động hủy sau 15 phút nếu chưa được xác nhận.
                                     <br>
-                                    <small>Thời gian còn lại: <span id="countdown"></span></small>
+                                    <small>Thời gian còn lại: <span id="pending-countdown"></span></small>
+                                </div>
+                            @elseif($order->status === 'pending' && $order->isPendingExpired())
+                                <div class="alert alert-danger">
+                                    <i class="fas fa-times-circle me-2"></i>
+                                    <strong>Đã hết hạn xác nhận</strong> - Đơn hàng đã hết thời gian chờ xác nhận (15 phút).
+                                </div>
+                            @endif
+
+                            {{-- Countdown cho đơn hàng confirmed (chờ thanh toán) - CHỈ hiển thị khi đã confirmed --}}
+                            @if($order->status === 'confirmed' && $order->payment_status === 'unpaid' && $order->confirmed_at)
+                                @if(!$order->isConfirmedExpired())
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-clock me-2"></i>
+                                        <strong>Đã xác nhận - Chờ thanh toán:</strong> Đơn hàng sẽ tự động hủy sau 15 phút nếu chưa thanh toán.
+                                        <br>
+                                        <small>Thời gian còn lại: <span id="confirmed-countdown"></span></small>
+                                        <br>
+                                        <small class="text-muted">Xác nhận lúc: {{ $order->confirmed_at->format('d/m/Y H:i:s') }}</small>
+                                    </div>
+                                @else
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-times-circle me-2"></i>
+                                        <strong>Đã hết hạn thanh toán</strong> - Đơn hàng đã hết thời gian thanh toán sau khi xác nhận (15 phút).
+                                    </div>
+                                @endif
+                            @endif
+
+                            {{-- Countdown cho VNPay (trường hợp đặc biệt) --}}
+                            @if($order->canPayVNPay())
+                                <div class="alert alert-success">
+                                    <i class="fas fa-credit-card me-2"></i>
+                                    <strong>VNPay:</strong> Thanh toán trực tuyến - Đơn hàng sẽ tự động hủy sau 15 phút nếu chưa thanh toán.
+                                    <br>
+                                    <small>Thời gian còn lại: <span id="vnpay-countdown"></span></small>
                                 </div>
                             @endif
                         </div>
@@ -308,21 +343,61 @@ function cancelOrder(orderId) {
     modal.show();
 }
 
-// Countdown timer for VNPay orders
-@if($order->canPayVNPay())
+// Countdown timers for different order states
 (function() {
-    const createdAt = new Date('{{ $order->created_at->toISOString() }}');
-    const expireAt = new Date(createdAt.getTime() + 15 * 60 * 1000); // 15 minutes
-    const paymentBtn = document.getElementById('paymentBtn');
-    
-    function updateCountdown() {
-        const now = new Date();
-        const timeLeft = expireAt - now;
+    function createCountdown(elementId, expireTime, onExpired) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
         
-        if (timeLeft <= 0) {
-            document.getElementById('countdown').innerHTML = '<span class="text-danger">Đã hết hạn</span>';
+        function updateCountdown() {
+            const now = new Date();
+            const timeLeft = expireTime - now;
             
-            // Ẩn nút thanh toán và hiển thị thông báo hết hạn
+            if (timeLeft <= 0) {
+                element.innerHTML = '<span class="text-danger">Đã hết hạn</span>';
+                if (onExpired) onExpired();
+                return;
+            }
+            
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            
+            element.innerHTML = `<span class="text-warning">${minutes}:${seconds.toString().padStart(2, '0')}</span>`;
+        }
+        
+        updateCountdown();
+        return setInterval(updateCountdown, 1000);
+    }
+    
+    // Pending countdown (15 minutes from created_at)
+    @if($order->status === 'pending' && !$order->isPendingExpired())
+        const pendingExpireAt = new Date('{{ $order->created_at->toISOString() }}');
+        pendingExpireAt.setMinutes(pendingExpireAt.getMinutes() + 15);
+        
+        createCountdown('pending-countdown', pendingExpireAt, function() {
+            // Reload page to show expired state
+            setTimeout(() => window.location.reload(), 2000);
+        });
+    @endif
+    
+    // Confirmed countdown (15 minutes from confirmed_at)
+    @if($order->status === 'confirmed' && $order->payment_status === 'unpaid' && $order->confirmed_at && !$order->isConfirmedExpired())
+        const confirmedExpireAt = new Date('{{ $order->confirmed_at->toISOString() }}');
+        confirmedExpireAt.setMinutes(confirmedExpireAt.getMinutes() + 15);
+        
+        createCountdown('confirmed-countdown', confirmedExpireAt, function() {
+            // Reload page to show expired state
+            setTimeout(() => window.location.reload(), 2000);
+        });
+    @endif
+    
+    // VNPay countdown (15 minutes from created_at)
+    @if($order->canPayVNPay())
+        const vnpayExpireAt = new Date('{{ $order->created_at->toISOString() }}');
+        vnpayExpireAt.setMinutes(vnpayExpireAt.getMinutes() + 15);
+        
+        createCountdown('vnpay-countdown', vnpayExpireAt, function() {
+            const paymentBtn = document.getElementById('paymentBtn');
             if (paymentBtn) {
                 paymentBtn.style.display = 'none';
             }
@@ -332,26 +407,14 @@ function cancelOrder(orderId) {
             expiredAlert.className = 'alert alert-danger mt-3';
             expiredAlert.innerHTML = `
                 <i class="fas fa-times-circle me-2"></i>
-                <strong>Đã hết hạn thanh toán</strong> - Đơn hàng đã hết thời gian thanh toán (15 phút).
+                <strong>Đã hết hạn thanh toán VNPay</strong> - Đơn hàng đã hết thời gian thanh toán (15 phút).
             `;
             
             if (paymentBtn && paymentBtn.parentNode) {
                 paymentBtn.parentNode.insertBefore(expiredAlert, paymentBtn);
             }
-            
-            return;
-        }
-        
-        const minutes = Math.floor(timeLeft / 60000);
-        const seconds = Math.floor((timeLeft % 60000) / 1000);
-        
-        document.getElementById('countdown').innerHTML = 
-            `<span class="text-warning">${minutes}:${seconds.toString().padStart(2, '0')}</span>`;
-    }
-    
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
+        });
+    @endif
 })();
-@endif
 </script>
 @endpush

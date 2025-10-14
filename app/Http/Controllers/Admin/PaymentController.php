@@ -131,10 +131,8 @@ class PaymentController extends Controller
             return back()->with('error', 'Đơn hàng đã được xác nhận hoặc không ở trạng thái chờ xác nhận!');
         }
 
-        // Cập nhật trạng thái đơn hàng
-        $order->update([
-            'status' => 'confirmed',
-        ]);
+        // Cập nhật trạng thái đơn hàng và set confirmed_at
+        $order->confirmOrder();
 
         return back()->with('success', 'Đã xác nhận đơn hàng thành công!');
     }

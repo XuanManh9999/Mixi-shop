@@ -12,6 +12,7 @@ class ProductImage extends Model
     protected $fillable = [
         'product_id',
         'image_url',
+        'public_id',
         'position',
         'created_at',
         'updated_at'
@@ -43,6 +44,11 @@ class ProductImage extends Model
      */
     public function getFullImageUrlAttribute()
     {
+        // Nếu là URL Cloudinary (https://), trả về trực tiếp
+        if (str_starts_with($this->image_url, 'https://')) {
+            return $this->image_url;
+        }
+        
         return asset($this->image_url);
     }
 }

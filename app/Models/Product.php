@@ -20,6 +20,7 @@ class Product extends Model
         'stock_qty',
         'is_active',
         'thumbnail_url',
+        'thumbnail_public_id',
         'created_at',
         'updated_at',
         'deleted_at'
@@ -117,6 +118,10 @@ class Product extends Model
     public function getMainImageAttribute()
     {
         if ($this->thumbnail_url) {
+            // Nếu là URL Cloudinary (https://), trả về trực tiếp
+            if (str_starts_with($this->thumbnail_url, 'https://')) {
+                return $this->thumbnail_url;
+            }
             // Nếu thumbnail_url đã chứa 'storage/', sử dụng asset() trực tiếp
             if (str_starts_with($this->thumbnail_url, 'storage/')) {
                 return asset($this->thumbnail_url);

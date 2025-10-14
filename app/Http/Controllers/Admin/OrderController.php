@@ -113,7 +113,12 @@ class OrderController extends Controller
         $oldStatus = $order->status;
         $newStatus = $request->status;
 
-        $order->update(['status' => $newStatus]);
+        // Nếu chuyển từ pending sang confirmed, sử dụng method confirmOrder()
+        if ($oldStatus === 'pending' && $newStatus === 'confirmed') {
+            $order->confirmOrder();
+        } else {
+            $order->update(['status' => $newStatus]);
+        }
 
         // Tạo history log nếu có bảng order_status_histories
         // OrderStatusHistory::create([

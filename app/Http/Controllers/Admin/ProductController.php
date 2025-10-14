@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\ProductImage;
+use App\Services\CloudinaryService;
+use App\Services\SimpleCloudinaryService;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -13,6 +16,13 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    protected $cloudinaryService;
+
+    public function __construct(SimpleCloudinaryService $cloudinaryService)
+    {
+        $this->cloudinaryService = $cloudinaryService;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -135,28 +145,46 @@ class ProductController extends Controller
             'is_active' => $request->has('is_active') ? 1 : 0,
         ];
 
-        // Upload thumbnail
+        // Upload thumbnail to Cloudinary - Using Facade
         if ($request->hasFile('thumbnail')) {
-            $thumbnail = $request->file('thumbnail');
-            $thumbnailName = 'products/' . time() . '_thumb_' . Str::random(10) . '.' . $thumbnail->getClientOriginalExtension();
-            $thumbnail->storeAs('public', $thumbnailName);
-            $data['thumbnail_url'] = 'storage/' . $thumbnailName;
+            try {
+                $uploadResult = Cloudinary::upload($request->file('thumbnail')->getRealPath(), [
+                    'folder' => 'mixishop/products/' . $data['slug'],
+                    'public_id' => $data['slug'] . '_thumbnail_' . time(),
+                    'transformation' => [
+                        'width' => 400,
+                        'height' => 400,
+                        'crop' => 'fill'
+                    ]
+                ]);
+                
+                $data['thumbnail_url'] = $uploadResult->getSecurePath();
+                $data['thumbnail_public_id'] = $uploadResult->getPublicId();
+            } catch (\Exception $e) {
+                \Log::error('Cloudinary upload error: ' . $e->getMessage());
+            }
         }
 
         $product = Product::create($data);
 
-        // Upload additional images
+        // Upload additional images to Cloudinary
         if ($request->hasFile('images')) {
             $position = 1;
             foreach ($request->file('images') as $image) {
-                $imageName = 'products/' . time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
-                $image->storeAs('public', $imageName);
+                $uploadResult = $this->cloudinaryService->uploadProductImage(
+                    $image, 
+                    $product->slug, 
+                    'gallery'
+                );
                 
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_url' => 'storage/' . $imageName,
-                    'position' => $position++,
-                ]);
+                if ($uploadResult) {
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_url' => $uploadResult['secure_url'],
+                        'public_id' => $uploadResult['public_id'],
+                        'position' => $position++,
+                    ]);
+                }
             }
         }
 
@@ -215,41 +243,63 @@ class ProductController extends Controller
             'is_active' => $request->has('is_active') ? 1 : 0,
         ];
 
-        // Upload thumbnail mới
+        // Upload thumbnail mới to Cloudinary - Direct approach
         if ($request->hasFile('thumbnail')) {
-            // Xóa thumbnail cũ
-            if ($product->thumbnail_url && Storage::exists('public/' . str_replace('storage/', '', $product->thumbnail_url))) {
-                Storage::delete('public/' . str_replace('storage/', '', $product->thumbnail_url));
+            // Xóa thumbnail cũ từ Cloudinary
+            if ($product->thumbnail_public_id) {
+                try {
+                    Cloudinary::destroy($product->thumbnail_public_id);
+                } catch (\Exception $e) {
+                    \Log::error('Cloudinary delete error: ' . $e->getMessage());
+                }
             }
 
-            $thumbnail = $request->file('thumbnail');
-            $thumbnailName = 'products/' . time() . '_thumb_' . Str::random(10) . '.' . $thumbnail->getClientOriginalExtension();
-            $thumbnail->storeAs('public', $thumbnailName);
-            $data['thumbnail_url'] = 'storage/' . $thumbnailName;
+            try {
+                $uploadResult = Cloudinary::upload($request->file('thumbnail')->getRealPath(), [
+                    'folder' => 'mixishop/products/' . $data['slug'],
+                    'public_id' => $data['slug'] . '_thumbnail_' . time(),
+                    'transformation' => [
+                        'width' => 400,
+                        'height' => 400,
+                        'crop' => 'fill'
+                    ]
+                ]);
+                
+                $data['thumbnail_url'] = $uploadResult->getSecurePath();
+                $data['thumbnail_public_id'] = $uploadResult->getPublicId();
+            } catch (\Exception $e) {
+                \Log::error('Cloudinary upload error: ' . $e->getMessage());
+            }
         }
 
         $product->update($data);
 
-        // Upload images mới
+        // Upload images mới to Cloudinary
         if ($request->hasFile('images')) {
-            // Xóa images cũ
+            // Xóa images cũ từ Cloudinary
             foreach ($product->images as $oldImage) {
-                if (Storage::exists('public/' . str_replace('storage/', '', $oldImage->image_url))) {
-                    Storage::delete('public/' . str_replace('storage/', '', $oldImage->image_url));
+                if ($oldImage->public_id) {
+                    $this->cloudinaryService->delete($oldImage->public_id);
                 }
                 $oldImage->delete();
             }
 
             $position = 1;
             foreach ($request->file('images') as $image) {
-                $imageName = 'products/' . time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
-                $image->storeAs('public', $imageName);
+                $uploadResult = $this->cloudinaryService->uploadProductImage(
+                    $image, 
+                    $product->slug, 
+                    'gallery'
+                );
                 
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_url' => 'storage/' . $imageName,
-                    'position' => $position++,
-                ]);
+                if ($uploadResult) {
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_url' => $uploadResult['secure_url'],
+                        'public_id' => $uploadResult['public_id'],
+                        'position' => $position++,
+                    ]);
+                }
             }
         }
 

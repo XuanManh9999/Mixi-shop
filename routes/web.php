@@ -170,7 +170,221 @@ Route::get('/test-vnpay-return', function() {
 // Test PaymentController vnpayReturn method
 Route::get('/test-payment-return', [PaymentController::class, 'vnpayReturn']);
 
-// Test image upload
+// Test Auto Cancel Orders
+Route::get('/test-auto-cancel', function() {
+    $pendingExpired = \App\Models\Order::where('status', 'pending')
+        ->where('created_at', '<=', now()->subMinutes(15))
+        ->get();
+        
+    $confirmedExpired = \App\Models\Order::where('status', 'confirmed')
+        ->where('payment_status', 'unpaid')
+        ->whereNotNull('confirmed_at')
+        ->where('confirmed_at', '<=', now()->subMinutes(15))
+        ->get();
+        
+    return response()->json([
+        'pending_expired' => $pendingExpired->count(),
+        'confirmed_expired' => $confirmedExpired->count(),
+        'pending_orders' => $pendingExpired->map(function($order) {
+            return [
+                'id' => $order->id,
+                'created_at' => $order->created_at->format('d/m/Y H:i'),
+                'minutes_ago' => $order->created_at->diffInMinutes(now()),
+                'should_cancel' => $order->isPendingExpired()
+            ];
+        }),
+        'confirmed_orders' => $confirmedExpired->map(function($order) {
+            return [
+                'id' => $order->id,
+                'confirmed_at' => $order->confirmed_at?->format('d/m/Y H:i'),
+                'minutes_ago' => $order->confirmed_at?->diffInMinutes(now()),
+                'should_cancel' => $order->isConfirmedExpired()
+            ];
+        })
+    ]);
+});
+
+// Test Cloudinary Facade
+Route::get('/test-cloudinary-facade', function() {
+    try {
+        $result = \CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::getUrl('sample');
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Cloudinary Facade hoạt động!',
+            'sample_url' => $result,
+            'config' => [
+                'cloud_name' => config('cloudinary.cloud_name'),
+                'api_key' => config('cloudinary.api_key'),
+                'api_secret' => config('cloudinary.api_secret') ? 'SET' : 'NOT SET'
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Lỗi Cloudinary Facade: ' . $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+});
+
+// Test SimpleCloudinaryService
+Route::get('/test-simple-cloudinary', function() {
+    try {
+        $service = app(\App\Services\SimpleCloudinaryService::class);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'SimpleCloudinaryService khởi tạo thành công!',
+            'service' => 'OK'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Lỗi SimpleCloudinaryService: ' . $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+});
+
+// Test CloudinaryService
+Route::get('/test-cloudinary-service', function() {
+    try {
+        $service = app(\App\Services\CloudinaryService::class);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'CloudinaryService khởi tạo thành công!',
+            'service' => 'OK'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Lỗi CloudinaryService: ' . $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+    }
+});
+
+// Test Cloudinary simple
+Route::get('/test-cloudinary-simple', function() {
+    try {
+        $cloudinary = new \Cloudinary\Cloudinary([
+            'cloud' => [
+                'cloud_name' => 'dpbo17rbt',
+                'api_key' => '923369223654775',
+                'api_secret' => '7szIKlRno-q8XTeuFI2YIeLuZ4',
+                'secure' => true
+            ]
+        ]);
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Cloudinary khởi tạo thành công!',
+            'config' => [
+                'cloud_name' => 'dpbo17rbt',
+                'api_key' => '923369223654775',
+                'api_secret' => 'HIDDEN',
+                'secure' => true
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Lỗi Cloudinary: ' . $e->getMessage()
+        ]);
+    }
+});
+
+// Test Cloudinary config
+Route::get('/test-cloudinary-config', function() {
+    return response()->json([
+        'cloudinary_config' => [
+            'cloud_name' => config('cloudinary.cloud_name'),
+            'api_key' => config('cloudinary.api_key'),
+            'api_secret' => config('cloudinary.api_secret') ? 'SET' : 'NOT SET',
+            'secure' => config('cloudinary.secure'),
+            'folder' => config('cloudinary.folder'),
+        ],
+        'env_values' => [
+            'CLOUDINARY_CLOUD_NAME' => env('CLOUDINARY_CLOUD_NAME'),
+            'CLOUDINARY_API_KEY' => env('CLOUDINARY_API_KEY'),
+            'CLOUDINARY_API_SECRET' => env('CLOUDINARY_API_SECRET') ? 'SET' : 'NOT SET',
+            'CLOUDINARY_SECURE' => env('CLOUDINARY_SECURE'),
+            'CLOUDINARY_FOLDER' => env('CLOUDINARY_FOLDER'),
+        ]
+    ]);
+});
+
+// Test MySQL connection
+Route::get('/test-mysql', function() {
+    try {
+        $pdo = DB::connection()->getPdo();
+        $version = DB::select('SELECT VERSION() as version')[0]->version;
+        $database = DB::connection()->getDatabaseName();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'MySQL kết nối thành công!',
+            'database' => $database,
+            'version' => $version,
+            'connection' => 'OK'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Lỗi kết nối MySQL: ' . $e->getMessage(),
+            'config' => [
+                'host' => config('database.connections.mysql.host'),
+                'port' => config('database.connections.mysql.port'),
+                'database' => config('database.connections.mysql.database'),
+                'username' => config('database.connections.mysql.username')
+            ]
+        ]);
+    }
+});
+
+// Test CSRF
+Route::get('/test-csrf', function() {
+    return view('test-csrf');
+})->name('test.csrf.show');
+
+Route::post('/test-csrf', function(\Illuminate\Http\Request $request) {
+    return redirect()->back()->with('success', 'CSRF hoạt động tốt! Tin nhắn: ' . $request->message);
+})->name('test.csrf.post');
+
+// Test Cloudinary upload
+Route::get('/test-cloudinary-upload', function() {
+    return view('test-cloudinary-upload');
+})->name('test.cloudinary.show');
+
+Route::post('/test-cloudinary-upload', function(\Illuminate\Http\Request $request) {
+    try {
+        if ($request->hasFile('image')) {
+            $cloudinaryService = app(\App\Services\CloudinaryService::class);
+            
+            $uploadResult = $cloudinaryService->upload(
+                $request->file('image'),
+                'test'
+            );
+            
+            if ($uploadResult) {
+                return redirect()->back()->with([
+                    'success' => 'Upload Cloudinary thành công!',
+                    'result' => $uploadResult
+                ]);
+            } else {
+                return redirect()->back()->with('error', 'Không thể upload lên Cloudinary');
+            }
+        }
+        
+        return redirect()->back()->with('error', 'Không có file được upload');
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Lỗi: ' . $e->getMessage());
+    }
+})->name('test.cloudinary.upload');
+
+// Test image upload (local)
 Route::get('/test-image-upload', function() {
     return view('test-image-upload');
 })->name('test.image.show');
