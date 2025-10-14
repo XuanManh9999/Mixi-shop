@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Date;
 use App\Models\Coupon;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Set timezone cho toàn bộ ứng dụng
+        date_default_timezone_set(config('app.timezone'));
+        
         // Chia sẻ danh sách mã giảm giá cho header
         View::composer('*', function ($view) {
             try {

@@ -199,6 +199,17 @@ Route::get('/test-order', function() {
     ]);
 });
 
+// Test timezone
+Route::get('/test-timezone', function() {
+    return response()->json([
+        'app_timezone' => config('app.timezone'),
+        'php_timezone' => date_default_timezone_get(),
+        'current_time' => now()->format('Y-m-d H:i:s T'),
+        'sample_order_time' => \App\Models\Order::first()->created_at->format('Y-m-d H:i:s T'),
+        'new_timestamp' => now()->toDateTimeString()
+    ]);
+});
+
 // Test direct VNPay return simulation
 Route::get('/direct-vnpay-test', function(\Illuminate\Http\Request $request) {
     // Simulate VNPay return parameters
