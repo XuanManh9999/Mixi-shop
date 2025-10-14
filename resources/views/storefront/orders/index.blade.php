@@ -119,10 +119,12 @@
                                                     </button>
                                                 @endif
 
-                                                @if($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid')
+                                                @if($order->canPayVNPay())
                                                     <a href="{{ route('payment.vnpay', $order) }}" class="btn btn-success btn-sm mt-1">
                                                         <i class="fas fa-credit-card me-1"></i>Thanh toán
                                                     </a>
+                                                @elseif($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid' && $order->isVNPayExpired())
+                                                    <span class="badge bg-danger mt-1">Hết hạn thanh toán</span>
                                                 @endif
                                             </div>
                                         </div>

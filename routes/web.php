@@ -171,27 +171,79 @@ Route::get('/test-vnpay-return', function() {
 Route::get('/test-payment-return', [PaymentController::class, 'vnpayReturn']);
 
 // Test image upload
-Route::get('/test-upload', function() {
-    return view('test-upload');
+Route::get('/test-image-upload', function() {
+    return view('test-image-upload');
+})->name('test.image.show');
+
+Route::post('/test-image-upload', function(\Illuminate\Http\Request $request) {
+    try {
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = 'products/' . time() . '_test_' . \Illuminate\Support\Str::random(10) . '.' . $image->getClientOriginalExtension();
+            
+            // Store file
+            $stored = $image->storeAs('public', $imageName);
+            
+            if ($stored) {
+                $imagePath = 'storage/' . $imageName;
+                $imageUrl = asset($imagePath);
+                
+                return redirect()->back()->with([
+                    'success' => 'Upload thành công!',
+                    'image_path' => $imagePath,
+                    'image_url' => $imageUrl
+                ]);
+            } else {
+                return redirect()->back()->with('error', 'Không thể lưu file');
+            }
+        }
+        
+        return redirect()->back()->with('error', 'Không có file được upload');
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Lỗi: ' . $e->getMessage());
+    }
+})->name('test.image.upload');
+
+// Debug products images
+Route::get('/debug-products', function() {
+    $products = \App\Models\Product::take(5)->get(['id', 'name', 'thumbnail_url']);
+    $result = [];
+    foreach ($products as $product) {
+        $result[] = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'thumbnail_url' => $product->thumbnail_url,
+            'main_image' => $product->main_image,
+            'file_exists' => $product->thumbnail_url ? file_exists(public_path($product->thumbnail_url)) : false
+        ];
+    }
+    return response()->json($result);
 });
 
-Route::post('/test-upload', function(\Illuminate\Http\Request $request) {
-    if ($request->hasFile('image')) {
-        $image = $request->file('image');
-        $imageName = 'products/' . time() . '_test_' . \Illuminate\Support\Str::random(10) . '.' . $image->getClientOriginalExtension();
-        $image->storeAs('public', $imageName);
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Upload thành công!',
-            'path' => 'storage/' . $imageName,
-            'full_url' => asset('storage/' . $imageName)
-        ]);
+// Test VNPay expiration logic
+Route::get('/test-vnpay-expiration', function() {
+    $vnpayOrders = \App\Models\Order::where('payment_method', 'vnpay')
+                                   ->where('payment_status', 'unpaid')
+                                   ->take(5)
+                                   ->get();
+    
+    $result = [];
+    foreach ($vnpayOrders as $order) {
+        $result[] = [
+            'id' => $order->id,
+            'created_at' => $order->created_at->format('Y-m-d H:i:s'),
+            'payment_method' => $order->payment_method,
+            'payment_status' => $order->payment_status,
+            'is_expired' => $order->isVNPayExpired(),
+            'can_pay' => $order->canPayVNPay(),
+            'time_left_seconds' => $order->vnpay_time_left,
+            'time_left_minutes' => round($order->vnpay_time_left / 60, 2)
+        ];
     }
     
     return response()->json([
-        'success' => false,
-        'message' => 'Không có file được upload'
+        'current_time' => now()->format('Y-m-d H:i:s'),
+        'orders' => $result
     ]);
 });
 

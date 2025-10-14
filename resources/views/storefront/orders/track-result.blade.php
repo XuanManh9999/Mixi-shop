@@ -58,16 +58,23 @@
                     </div>
 
                     <!-- Payment Warning for VNPay -->
-                    @if($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid')
+                    @if($order->canPayVNPay())
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>Chú ý:</strong> Đơn hàng sẽ tự động hủy sau 15 phút nếu chưa thanh toán.
                             <br>
                             <small>Thời gian còn lại: <span id="countdown"></span></small>
                             <br>
-                            <a href="{{ route('payment.vnpay', $order) }}" class="btn btn-success btn-sm mt-2">
+                            <a href="{{ route('payment.vnpay', $order) }}" class="btn btn-success btn-sm mt-2" id="paymentBtn">
                                 <i class="fas fa-credit-card me-1"></i>Thanh toán ngay
                             </a>
+                        </div>
+                    @endif
+
+                    @if($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid' && $order->isVNPayExpired())
+                        <div class="alert alert-danger">
+                            <i class="fas fa-times-circle me-2"></i>
+                            <strong>Đã hết hạn thanh toán</strong> - Đơn hàng đã hết thời gian thanh toán (15 phút).
                         </div>
                     @endif
 
@@ -244,10 +251,11 @@
 @push('scripts')
 <script>
 // Countdown timer for VNPay orders
-@if($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid')
+@if($order->canPayVNPay())
 (function() {
     const createdAt = new Date('{{ $order->created_at->toISOString() }}');
     const expireAt = new Date(createdAt.getTime() + 15 * 60 * 1000); // 15 minutes
+    const paymentBtn = document.getElementById('paymentBtn');
     
     function updateCountdown() {
         const now = new Date();
@@ -255,7 +263,28 @@
         
         if (timeLeft <= 0) {
             document.getElementById('countdown').innerHTML = '<span class="text-danger">Đã hết hạn</span>';
-            setTimeout(() => location.reload(), 2000);
+            
+            // Ẩn nút thanh toán
+            if (paymentBtn) {
+                paymentBtn.style.display = 'none';
+            }
+            
+            // Ẩn toàn bộ alert warning và hiển thị alert danger
+            const warningAlert = paymentBtn ? paymentBtn.closest('.alert-warning') : null;
+            if (warningAlert) {
+                warningAlert.style.display = 'none';
+                
+                // Tạo alert hết hạn
+                const expiredAlert = document.createElement('div');
+                expiredAlert.className = 'alert alert-danger';
+                expiredAlert.innerHTML = `
+                    <i class="fas fa-times-circle me-2"></i>
+                    <strong>Đã hết hạn thanh toán</strong> - Đơn hàng đã hết thời gian thanh toán (15 phút).
+                `;
+                
+                warningAlert.parentNode.insertBefore(expiredAlert, warningAlert);
+            }
+            
             return;
         }
         

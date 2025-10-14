@@ -67,14 +67,6 @@ class Order extends Model
     }
 
     /**
-     * Relationship với OrderStatusHistories
-     */
-    public function statusHistories()
-    {
-        return $this->hasMany(OrderStatusHistory::class);
-    }
-
-    /**
      * Relationship với Payments
      */
     public function payments()
@@ -177,6 +169,44 @@ class Order extends Model
     public function getTotalItemsAttribute()
     {
         return $this->orderItems->sum('quantity');
+    }
+
+    /**
+     * Kiểm tra đơn hàng VNPay đã hết hạn thanh toán chưa (15 phút)
+     */
+    public function isVNPayExpired()
+    {
+        if ($this->payment_method !== 'vnpay' || $this->payment_status !== 'unpaid') {
+            return false;
+        }
+        
+        $expireTime = $this->created_at->addMinutes(15);
+        return now()->greaterThan($expireTime);
+    }
+
+    /**
+     * Kiểm tra có thể thanh toán VNPay không
+     */
+    public function canPayVNPay()
+    {
+        return $this->payment_method === 'vnpay' 
+            && $this->payment_status === 'unpaid' 
+            && !$this->isVNPayExpired();
+    }
+
+    /**
+     * Lấy thời gian còn lại để thanh toán VNPay (tính bằng giây)
+     */
+    public function getVNPayTimeLeftAttribute()
+    {
+        if ($this->payment_method !== 'vnpay' || $this->payment_status !== 'unpaid') {
+            return 0;
+        }
+        
+        $expireTime = $this->created_at->addMinutes(15);
+        $timeLeft = $expireTime->diffInSeconds(now(), false);
+        
+        return max(0, -$timeLeft); // Trả về 0 nếu đã hết hạn
     }
 
 }

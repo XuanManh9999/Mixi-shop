@@ -117,7 +117,12 @@ class Product extends Model
     public function getMainImageAttribute()
     {
         if ($this->thumbnail_url) {
-            return asset($this->thumbnail_url);
+            // Nếu thumbnail_url đã chứa 'storage/', sử dụng asset() trực tiếp
+            if (str_starts_with($this->thumbnail_url, 'storage/')) {
+                return asset($this->thumbnail_url);
+            }
+            // Nếu không, thêm storage/ vào đầu
+            return asset('storage/' . $this->thumbnail_url);
         }
         return asset('images/no-image.svg');
     }

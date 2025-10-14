@@ -40,7 +40,7 @@
                         <div class="col-md-6">
                             <p><strong>Ngày đặt hàng:</strong> {{ $order->created_at->format('d/m/Y H:i:s') }}</p>
                             <p><strong>Phương thức thanh toán:</strong> {{ $order->payment_method_label }}</p>
-                            @if($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid')
+                            @if($order->canPayVNPay())
                                 <div class="alert alert-warning">
                                     <i class="fas fa-clock me-2"></i>
                                     <strong>Lưu ý:</strong> Đơn hàng sẽ tự động hủy sau 15 phút nếu chưa thanh toán.
@@ -67,10 +67,15 @@
 
                     <!-- Actions -->
                     <div class="mt-3">
-                        @if($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid')
-                            <a href="{{ route('payment.vnpay', $order) }}" class="btn btn-success">
+                        @if($order->canPayVNPay())
+                            <a href="{{ route('payment.vnpay', $order) }}" class="btn btn-success" id="paymentBtn">
                                 <i class="fas fa-credit-card me-2"></i>Thanh toán ngay
                             </a>
+                        @elseif($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid' && $order->isVNPayExpired())
+                            <div class="alert alert-danger">
+                                <i class="fas fa-times-circle me-2"></i>
+                                <strong>Đã hết hạn thanh toán</strong> - Đơn hàng đã hết thời gian thanh toán (15 phút).
+                            </div>
                         @endif
 
                         @if(in_array($order->status, ['pending', 'confirmed']) && $order->payment_status !== 'paid')
@@ -304,10 +309,11 @@ function cancelOrder(orderId) {
 }
 
 // Countdown timer for VNPay orders
-@if($order->payment_method === 'vnpay' && $order->payment_status === 'unpaid')
+@if($order->canPayVNPay())
 (function() {
     const createdAt = new Date('{{ $order->created_at->toISOString() }}');
     const expireAt = new Date(createdAt.getTime() + 15 * 60 * 1000); // 15 minutes
+    const paymentBtn = document.getElementById('paymentBtn');
     
     function updateCountdown() {
         const now = new Date();
@@ -315,7 +321,24 @@ function cancelOrder(orderId) {
         
         if (timeLeft <= 0) {
             document.getElementById('countdown').innerHTML = '<span class="text-danger">Đã hết hạn</span>';
-            setTimeout(() => location.reload(), 2000);
+            
+            // Ẩn nút thanh toán và hiển thị thông báo hết hạn
+            if (paymentBtn) {
+                paymentBtn.style.display = 'none';
+            }
+            
+            // Hiển thị thông báo hết hạn
+            const expiredAlert = document.createElement('div');
+            expiredAlert.className = 'alert alert-danger mt-3';
+            expiredAlert.innerHTML = `
+                <i class="fas fa-times-circle me-2"></i>
+                <strong>Đã hết hạn thanh toán</strong> - Đơn hàng đã hết thời gian thanh toán (15 phút).
+            `;
+            
+            if (paymentBtn && paymentBtn.parentNode) {
+                paymentBtn.parentNode.insertBefore(expiredAlert, paymentBtn);
+            }
+            
             return;
         }
         

@@ -180,7 +180,7 @@
     </div>
 </div>
 
-<!-- Charts Row (Placeholder for future) -->
+<!-- Charts Row (Placeholder for future)
 <div class="row">
     <div class="col-12">
         <div class="card">
@@ -196,7 +196,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 @endsection
 
 @push('styles')
