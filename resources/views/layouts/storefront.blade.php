@@ -88,12 +88,29 @@
                     </li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('orders.track') }}">Tra cứu đơn hàng</a></li>
                     @auth
-                        <li class="nav-item"><a class="nav-link" href="{{ route('orders.index') }}">Đơn hàng của tôi</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ route('dashboard') }}">Bảng điều khiển</a></li>
-                        <li class="nav-item">
-                            <form method="POST" action="{{ route('logout') }}">@csrf
-                                <button class="btn btn-link nav-link" type="submit">Đăng xuất</button>
-                            </form>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user me-1"></i>{{ Auth::user()->name }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{{ route('profile.show') }}">
+                                    <i class="fas fa-user-edit me-2"></i>Thông tin cá nhân
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ route('orders.index') }}">
+                                    <i class="fas fa-shopping-bag me-2"></i>Đơn hàng của tôi
+                                </a></li>
+                                <li><a class="dropdown-item" href="{{ route('dashboard') }}">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Bảng điều khiển
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ route('logout') }}">@csrf
+                                        <button class="dropdown-item text-danger" type="submit">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
                         </li>
                     @else
                         <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Đăng nhập</a></li>

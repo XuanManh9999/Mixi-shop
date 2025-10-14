@@ -44,14 +44,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
     // Dashboard user thường
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\ProfileController::class, 'dashboard'])->name('dashboard');
     
     // Quản lý đơn hàng của user
     Route::get('/orders', [\App\Http\Controllers\OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [\App\Http\Controllers\OrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/cancel', [\App\Http\Controllers\OrderController::class, 'cancel'])->name('orders.cancel');
+    
+    // Quản lý thông tin cá nhân
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::delete('/profile', [\App\Http\Controllers\ProfileController::class, 'deleteAccount'])->name('profile.delete');
 });
 
 // Routes frontend sản phẩm và danh mục
@@ -62,9 +66,11 @@ Route::get('/c/{category:slug}', [FrontCategoryController::class, 'show'])->name
 // Cart page (render bằng JS + localStorage)
 Route::view('/cart', 'storefront.cart')->name('cart.index');
 
-// Checkout
-Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
-Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
+// Checkout - yêu cầu đăng nhập
+Route::middleware('auth')->group(function () {
+    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+    Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
+});
 Route::get('/checkout/thank-you/{order}', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
 // Public coupon validate for checkout
 Route::get('/coupon/validate', [CheckoutController::class, 'validateCoupon'])->name('coupon.validate');

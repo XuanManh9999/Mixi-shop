@@ -4,20 +4,29 @@
 
 @section('content')
 <div class="container">
-    <h1 class="h4 mb-3">Thông tin thanh toán</h1>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="h4 mb-0">Thông tin thanh toán</h1>
+        <div class="text-muted">
+            <i class="fas fa-user me-1"></i>
+            Đăng nhập với: <strong>{{ $user->name }}</strong>
+        </div>
+    </div>
     <div class="row g-4">
         <div class="col-lg-7">
             <form id="checkoutForm" method="POST" action="{{ route('checkout.place') }}">@csrf
                 <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <i class="fas fa-shipping-fast me-2"></i>Thông tin giao hàng
+                    </div>
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label">Họ tên</label>
-                                <input name="customer_name" class="form-control" required>
+                                <input name="customer_name" class="form-control" value="{{ $user->name }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Số điện thoại</label>
-                                <input name="customer_phone" class="form-control" required>
+                                <input name="customer_phone" class="form-control" value="{{ $user->phone ?? '' }}" required>
                             </div>
                             <div class="col-12">
                                 <label class="form-label">Địa chỉ giao hàng</label>
@@ -50,6 +59,9 @@
                 </div>
 
                 <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <i class="fas fa-credit-card me-2"></i>Phương thức thanh toán & vận chuyển
+                    </div>
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -62,8 +74,8 @@
                             <div class="col-md-6">
                                 <label class="form-label">Vận chuyển</label>
                                 <select name="shipping_method" class="form-select" required>
-                                    <option value="standard">Tiêu chuẩn</option>
-                                    <option value="express">Hỏa tốc</option>
+                                    <option value="standard">Tiêu chuẩn (30,000₫)</option>
+                                    <option value="express">Hỏa tốc (60,000₫)</option>
                                 </select>
                             </div>
                         </div>

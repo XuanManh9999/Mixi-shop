@@ -14,7 +14,9 @@ class CheckoutController extends Controller
 {
     public function show()
     {
-        return view('storefront.checkout');
+        // Middleware auth đã đảm bảo user đã đăng nhập
+        $user = auth()->user();
+        return view('storefront.checkout', compact('user'));
     }
 
     public function place(Request $request)
@@ -70,8 +72,8 @@ class CheckoutController extends Controller
             $total = max(0, $subtotal + $shippingFee - $discount);
 
             $order = Order::create([
-                // Nếu chưa đăng nhập, gán 0 để tránh NULL (schema cột user_id không cho NULL)
-                'user_id' => auth()->id() ?? 0,
+                // Middleware auth đã đảm bảo user đã đăng nhập
+                'user_id' => auth()->id(),
                 'status' => 'pending',
                 'payment_status' => 'unpaid',
                 'payment_method' => $validated['payment_method'],
@@ -110,14 +112,12 @@ class CheckoutController extends Controller
             if (!empty($couponCode) && isset($coupon)) {
                 // Tăng used_count tổng
                 $coupon->increment('used_count');
-                // Ghi nhận user dùng (nếu đăng nhập)
-                if (auth()->check()) {
-                    $cu = CouponUser::firstOrCreate(
-                        ['coupon_id' => $coupon->id, 'user_id' => auth()->id()],
-                        ['used_times' => 0]
-                    );
-                    $cu->increment('used_times');
-                }
+                // Ghi nhận user dùng (user đã đăng nhập do middleware auth)
+                $cu = CouponUser::firstOrCreate(
+                    ['coupon_id' => $coupon->id, 'user_id' => auth()->id()],
+                    ['used_times' => 0]
+                );
+                $cu->increment('used_times');
             }
 
             // Trả về thông tin đơn hàng đã tạo (không redirect đi đâu)

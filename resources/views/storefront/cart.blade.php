@@ -5,6 +5,16 @@
 @section('content')
 <div class="container">
     <h1 class="h4 mb-3">Giỏ hàng của bạn</h1>
+    
+    @guest
+        <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Lưu ý:</strong> Bạn cần đăng nhập để có thể đặt hàng. 
+            <a href="{{ route('login') }}" class="alert-link">Đăng nhập ngay</a> hoặc 
+            <a href="{{ route('register') }}" class="alert-link">tạo tài khoản mới</a>.
+        </div>
+    @endguest
+    
     <div id="cartApp" class="card">
         <div class="table-responsive">
             <table class="table table-striped align-middle mb-0">
@@ -26,7 +36,15 @@
         </div>
         <div class="card-body text-end">
             <a href="{{ route('products.index') }}" class="btn btn-outline-secondary">Tiếp tục chọn món</a>
-            <a href="{{ route('checkout.show') }}" class="btn btn-dark">Lên đơn</a>
+            @auth
+                <a href="{{ route('checkout.show') }}" class="btn btn-dark">Lên đơn</a>
+            @else
+                <div class="d-inline-block" data-bs-toggle="tooltip" data-bs-placement="top" title="Vui lòng đăng nhập để đặt hàng">
+                    <a href="{{ route('login') }}" class="btn btn-dark">
+                        <i class="fas fa-sign-in-alt me-1"></i>Đăng nhập để đặt hàng
+                    </a>
+                </div>
+            @endauth
         </div>
     </div>
 </div>

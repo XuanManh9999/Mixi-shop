@@ -12,6 +12,15 @@
 </div>
 
 <div class="auth-body">
+    {{-- Thông báo đặc biệt khi redirect từ checkout --}}
+    @if (request()->get('intended') === 'checkout' || str_contains(url()->previous(), 'checkout'))
+        <div class="alert alert-info">
+            <i class="fas fa-shopping-cart me-2"></i>
+            <strong>Bạn cần đăng nhập để đặt hàng!</strong><br>
+            <small>Sau khi đăng nhập, bạn sẽ được chuyển đến trang thanh toán để hoàn tất đơn hàng.</small>
+        </div>
+    @endif
+
     @if (session('status'))
         <div class="alert alert-success">
             <i class="fas fa-check-circle me-2"></i>
