@@ -68,8 +68,8 @@ Route::view('/cart', 'storefront.cart')->name('cart.index');
 
 // Checkout - yêu cầu đăng nhập
 Route::middleware('auth')->group(function () {
-    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
-    Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
+Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
 });
 Route::get('/checkout/thank-you/{order}', [CheckoutController::class, 'thankyou'])->name('checkout.thankyou');
 // Public coupon validate for checkout
@@ -133,16 +133,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 // Routes thanh toán
 // VNPay - không cần auth vì có thể thanh toán không cần đăng nhập
 Route::get('/payment/vnpay/{order}', [PaymentController::class, 'createVNPayPayment'])->name('payment.vnpay');
-Route::get('/payment/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('payment.vnpay.callback');
+    Route::get('/payment/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('payment.vnpay.callback');
 Route::get('/payment/vnpay/return', [PaymentController::class, 'vnpayReturn'])->name('payment.vnpay.return');
 
 // Alternative callback routes để test
 Route::any('/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('vnpay.callback.alt');
 Route::any('/vnpay/return', [PaymentController::class, 'vnpayReturn'])->name('vnpay.return.alt');
 Route::any('/callback', [PaymentController::class, 'vnpayCallback'])->name('callback.alt');
-
-// Thanh toán khi nhận hàng
-Route::post('/payment/cash/{order}', [PaymentController::class, 'cashOnDelivery'])->name('payment.cash');
+    
+    // Thanh toán khi nhận hàng
+    Route::post('/payment/cash/{order}', [PaymentController::class, 'cashOnDelivery'])->name('payment.cash');
 
 // Debug route để test VNPay callback
 Route::get('/test-vnpay-callback', function(\Illuminate\Http\Request $request) {

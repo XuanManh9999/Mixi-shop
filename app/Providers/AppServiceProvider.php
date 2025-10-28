@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
                     ->active()->valid()->available()
                     ->orderByDesc('start_at')
                     ->limit(10)
-                    ->get(['id','code','type','value','end_at','usage_limit','used_count']);
+                    ->get(['id','code','type','value','start_at','end_at','usage_limit','used_count','is_active']);
             } catch (\Throwable $e) {
                 $coupons = collect();
             }

@@ -175,9 +175,9 @@
                                 <input type="number" 
                                        class="form-control @error('usage_per_user') is-invalid @enderror" 
                                        id="usage_per_user" name="usage_per_user" 
-                                       value="{{ old('usage_per_user') }}" 
+                                       value="{{ old('usage_per_user', 1) }}" 
                                        min="1"
-                                       placeholder="Không giới hạn">
+                                       placeholder="1">
                                 <small class="text-muted">Số lần mỗi user được dùng</small>
                                 @error('usage_per_user')
                                     <div class="invalid-feedback">{{ $message }}</div>

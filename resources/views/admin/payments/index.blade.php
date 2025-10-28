@@ -312,7 +312,7 @@
                             trong tổng số {{ $payments->total() }} giao dịch
                         </div>
                         <div>
-                            {{ $payments->links() }}
+                            {{ $payments->appends(request()->query())->links('custom.admin-pagination') }}
                         </div>
                     </div>
                 @else

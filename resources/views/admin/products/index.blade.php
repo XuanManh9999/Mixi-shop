@@ -184,7 +184,7 @@
                                         @if(!$product->is_active)
                                             <span class="badge bg-danger mb-1 d-block">Vô hiệu</span>
                                         @endif
-                                        @if($product->stock_quantity == 0)
+                                        @if($product->stock_qty == 0)
                                             <span class="badge bg-warning mb-1 d-block">Hết hàng</span>
                                         @endif
                                         @if($product->is_on_sale)
@@ -318,14 +318,8 @@
                     </div>
                     
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                        <div class="text-muted">
-                            Hiển thị {{ $products->firstItem() ?? 0 }} - {{ $products->lastItem() ?? 0 }} 
-                            trong tổng số {{ $products->total() }} sản phẩm
-                        </div>
-                        <div>
-                            {{ $products->links() }}
-                        </div>
+                    <div class="mt-4">
+                        {{ $products->appends(request()->query())->links('custom.admin-pagination') }}
                     </div>
                 @else
                     <div class="text-center py-5">

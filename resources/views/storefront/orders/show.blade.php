@@ -55,8 +55,18 @@
                                 </div>
                             @endif
 
-                            {{-- Countdown cho đơn hàng confirmed (chờ thanh toán) - CHỈ hiển thị khi đã confirmed --}}
-                            @if($order->status === 'confirmed' && $order->payment_status === 'unpaid' && $order->confirmed_at)
+                            {{-- Countdown cho VNPay (chỉ khi đã confirmed) --}}
+                            @if($order->canPayVNPay() && $order->status === 'confirmed')
+                                <div class="alert alert-success">
+                                    <i class="fas fa-credit-card me-2"></i>
+                                    <strong>VNPay:</strong> Thanh toán trực tuyến - Đơn hàng sẽ tự động hủy sau 15 phút nếu chưa thanh toán.
+                                    <br>
+                                    <small>Thời gian còn lại: <span id="vnpay-countdown"></span></small>
+                                    <br>
+                                    <small class="text-muted">Tạo đơn lúc: {{ $order->created_at->format('d/m/Y H:i:s') }}</small>
+                                </div>
+                            {{-- Countdown cho đơn hàng confirmed thường (COD, etc) --}}
+                            @elseif($order->status === 'confirmed' && $order->payment_status === 'unpaid' && $order->confirmed_at)
                                 @if(!$order->isConfirmedExpired())
                                     <div class="alert alert-warning">
                                         <i class="fas fa-clock me-2"></i>
@@ -72,16 +82,6 @@
                                         <strong>Đã hết hạn thanh toán</strong> - Đơn hàng đã hết thời gian thanh toán sau khi xác nhận (15 phút).
                                     </div>
                                 @endif
-                            @endif
-
-                            {{-- Countdown cho VNPay (trường hợp đặc biệt) --}}
-                            @if($order->canPayVNPay())
-                                <div class="alert alert-success">
-                                    <i class="fas fa-credit-card me-2"></i>
-                                    <strong>VNPay:</strong> Thanh toán trực tuyến - Đơn hàng sẽ tự động hủy sau 15 phút nếu chưa thanh toán.
-                                    <br>
-                                    <small>Thời gian còn lại: <span id="vnpay-countdown"></span></small>
-                                </div>
                             @endif
                         </div>
                         <div class="col-md-6">
@@ -380,19 +380,8 @@ function cancelOrder(orderId) {
         });
     @endif
     
-    // Confirmed countdown (15 minutes from confirmed_at)
-    @if($order->status === 'confirmed' && $order->payment_status === 'unpaid' && $order->confirmed_at && !$order->isConfirmedExpired())
-        const confirmedExpireAt = new Date('{{ $order->confirmed_at->toISOString() }}');
-        confirmedExpireAt.setMinutes(confirmedExpireAt.getMinutes() + 15);
-        
-        createCountdown('confirmed-countdown', confirmedExpireAt, function() {
-            // Reload page to show expired state
-            setTimeout(() => window.location.reload(), 2000);
-        });
-    @endif
-    
-    // VNPay countdown (15 minutes from created_at)
-    @if($order->canPayVNPay())
+    // VNPay countdown (chỉ khi đã confirmed - 15 minutes from created_at)
+    @if($order->canPayVNPay() && $order->status === 'confirmed')
         const vnpayExpireAt = new Date('{{ $order->created_at->toISOString() }}');
         vnpayExpireAt.setMinutes(vnpayExpireAt.getMinutes() + 15);
         
@@ -413,6 +402,15 @@ function cancelOrder(orderId) {
             if (paymentBtn && paymentBtn.parentNode) {
                 paymentBtn.parentNode.insertBefore(expiredAlert, paymentBtn);
             }
+        });
+    // Confirmed countdown (cho đơn hàng thường - 15 minutes from confirmed_at)
+    @elseif($order->status === 'confirmed' && $order->payment_status === 'unpaid' && $order->confirmed_at && !$order->isConfirmedExpired())
+        const confirmedExpireAt = new Date('{{ $order->confirmed_at->toISOString() }}');
+        confirmedExpireAt.setMinutes(confirmedExpireAt.getMinutes() + 15);
+        
+        createCountdown('confirmed-countdown', confirmedExpireAt, function() {
+            // Reload page to show expired state
+            setTimeout(() => window.location.reload(), 2000);
         });
     @endif
 })();

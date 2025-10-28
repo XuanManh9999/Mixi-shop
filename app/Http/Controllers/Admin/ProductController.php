@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\ProductImage;
-use App\Services\CloudinaryService;
-use App\Services\SimpleCloudinaryService;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use App\Services\S3Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -16,11 +14,11 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
-    protected $cloudinaryService;
+    protected $s3Service;
 
-    public function __construct(SimpleCloudinaryService $cloudinaryService)
+    public function __construct(S3Service $s3Service)
     {
-        $this->cloudinaryService = $cloudinaryService;
+        $this->s3Service = $s3Service;
     }
 
     /**
@@ -145,43 +143,50 @@ class ProductController extends Controller
             'is_active' => $request->has('is_active') ? 1 : 0,
         ];
 
-        // Upload thumbnail to Cloudinary - Using Facade
+        // Upload thumbnail to S3
         if ($request->hasFile('thumbnail')) {
-            try {
-                $uploadResult = Cloudinary::upload($request->file('thumbnail')->getRealPath(), [
-                    'folder' => 'mixishop/products/' . $data['slug'],
-                    'public_id' => $data['slug'] . '_thumbnail_' . time(),
-                    'transformation' => [
-                        'width' => 400,
-                        'height' => 400,
-                        'crop' => 'fill'
-                    ]
+            \Log::info('ProductController: Attempting to upload thumbnail', [
+                'slug' => $data['slug'],
+                'file_size' => $request->file('thumbnail')->getSize(),
+                'mime_type' => $request->file('thumbnail')->getMimeType(),
+            ]);
+            
+            $uploadResult = $this->s3Service->uploadProductThumbnail(
+                $request->file('thumbnail'),
+                $data['slug']
+            );
+            
+            if ($uploadResult) {
+                $data['thumbnail_url'] = $uploadResult['url'];
+                $data['thumbnail_public_id'] = $uploadResult['path']; // Store S3 path for deletion
+                \Log::info('ProductController: Thumbnail uploaded successfully', [
+                    'url' => $uploadResult['url'],
                 ]);
-                
-                $data['thumbnail_url'] = $uploadResult->getSecurePath();
-                $data['thumbnail_public_id'] = $uploadResult->getPublicId();
-            } catch (\Exception $e) {
-                \Log::error('Cloudinary upload error: ' . $e->getMessage());
+            } else {
+                \Log::error('ProductController: Failed to upload thumbnail to S3');
+                return back()
+                    ->withErrors(['thumbnail' => 'Không thể upload ảnh lên S3. Vui lòng kiểm tra cấu hình AWS trong file .env'])
+                    ->withInput();
             }
         }
 
         $product = Product::create($data);
 
-        // Upload additional images to Cloudinary
+        // Upload additional images to S3
         if ($request->hasFile('images')) {
             $position = 1;
             foreach ($request->file('images') as $image) {
-                $uploadResult = $this->cloudinaryService->uploadProductImage(
-                    $image, 
-                    $product->slug, 
-                    'gallery'
+                $uploadResult = $this->s3Service->uploadProductGalleryImage(
+                    $image,
+                    $product->slug,
+                    $position
                 );
                 
                 if ($uploadResult) {
                     ProductImage::create([
                         'product_id' => $product->id,
-                        'image_url' => $uploadResult['secure_url'],
-                        'public_id' => $uploadResult['public_id'],
+                        'image_url' => $uploadResult['url'],
+                        'public_id' => $uploadResult['path'],
                         'position' => $position++,
                     ]);
                 }
@@ -243,60 +248,65 @@ class ProductController extends Controller
             'is_active' => $request->has('is_active') ? 1 : 0,
         ];
 
-        // Upload thumbnail mới to Cloudinary - Direct approach
+        // Upload thumbnail mới to S3
         if ($request->hasFile('thumbnail')) {
-            // Xóa thumbnail cũ từ Cloudinary
+            \Log::info('ProductController: Attempting to update thumbnail', [
+                'product_id' => $product->id,
+                'slug' => $data['slug'],
+            ]);
+            
+            // Xóa thumbnail cũ từ S3
             if ($product->thumbnail_public_id) {
-                try {
-                    Cloudinary::destroy($product->thumbnail_public_id);
-                } catch (\Exception $e) {
-                    \Log::error('Cloudinary delete error: ' . $e->getMessage());
-                }
+                \Log::info('ProductController: Deleting old thumbnail', [
+                    'path' => $product->thumbnail_public_id,
+                ]);
+                $this->s3Service->delete($product->thumbnail_public_id);
             }
 
-            try {
-                $uploadResult = Cloudinary::upload($request->file('thumbnail')->getRealPath(), [
-                    'folder' => 'mixishop/products/' . $data['slug'],
-                    'public_id' => $data['slug'] . '_thumbnail_' . time(),
-                    'transformation' => [
-                        'width' => 400,
-                        'height' => 400,
-                        'crop' => 'fill'
-                    ]
+            $uploadResult = $this->s3Service->uploadProductThumbnail(
+                $request->file('thumbnail'),
+                $data['slug']
+            );
+            
+            if ($uploadResult) {
+                $data['thumbnail_url'] = $uploadResult['url'];
+                $data['thumbnail_public_id'] = $uploadResult['path'];
+                \Log::info('ProductController: Thumbnail updated successfully', [
+                    'url' => $uploadResult['url'],
                 ]);
-                
-                $data['thumbnail_url'] = $uploadResult->getSecurePath();
-                $data['thumbnail_public_id'] = $uploadResult->getPublicId();
-            } catch (\Exception $e) {
-                \Log::error('Cloudinary upload error: ' . $e->getMessage());
+            } else {
+                \Log::error('ProductController: Failed to update thumbnail to S3');
+                return back()
+                    ->withErrors(['thumbnail' => 'Không thể upload ảnh lên S3. Vui lòng kiểm tra cấu hình AWS trong file .env'])
+                    ->withInput();
             }
         }
 
         $product->update($data);
 
-        // Upload images mới to Cloudinary
+        // Upload images mới to S3
         if ($request->hasFile('images')) {
-            // Xóa images cũ từ Cloudinary
+            // Xóa images cũ từ S3
             foreach ($product->images as $oldImage) {
                 if ($oldImage->public_id) {
-                    $this->cloudinaryService->delete($oldImage->public_id);
+                    $this->s3Service->delete($oldImage->public_id);
                 }
                 $oldImage->delete();
             }
 
             $position = 1;
             foreach ($request->file('images') as $image) {
-                $uploadResult = $this->cloudinaryService->uploadProductImage(
-                    $image, 
-                    $product->slug, 
-                    'gallery'
+                $uploadResult = $this->s3Service->uploadProductGalleryImage(
+                    $image,
+                    $product->slug,
+                    $position
                 );
                 
                 if ($uploadResult) {
                     ProductImage::create([
                         'product_id' => $product->id,
-                        'image_url' => $uploadResult['secure_url'],
-                        'public_id' => $uploadResult['public_id'],
+                        'image_url' => $uploadResult['url'],
+                        'public_id' => $uploadResult['path'],
                         'position' => $position++,
                     ]);
                 }
@@ -317,15 +327,15 @@ class ProductController extends Controller
             return back()->with('error', 'Không thể xóa sản phẩm đã có trong đơn hàng!');
         }
 
-        // Xóa thumbnail
-        if ($product->thumbnail_url && Storage::exists('public/' . str_replace('storage/', '', $product->thumbnail_url))) {
-            Storage::delete('public/' . str_replace('storage/', '', $product->thumbnail_url));
+        // Xóa thumbnail từ S3
+        if ($product->thumbnail_public_id) {
+            $this->s3Service->delete($product->thumbnail_public_id);
         }
 
-        // Xóa images
+        // Xóa images từ S3
         foreach ($product->images as $image) {
-            if (Storage::exists('public/' . str_replace('storage/', '', $image->image_url))) {
-                Storage::delete('public/' . str_replace('storage/', '', $image->image_url));
+            if ($image->public_id) {
+                $this->s3Service->delete($image->public_id);
             }
             $image->delete();
         }

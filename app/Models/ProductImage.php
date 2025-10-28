@@ -44,8 +44,8 @@ class ProductImage extends Model
      */
     public function getFullImageUrlAttribute()
     {
-        // Nếu là URL Cloudinary (https://), trả về trực tiếp
-        if (str_starts_with($this->image_url, 'https://')) {
+        // Nếu là URL đầy đủ (https:// hoặc http://), trả về trực tiếp (S3, Cloudinary, etc.)
+        if (str_starts_with($this->image_url, 'https://') || str_starts_with($this->image_url, 'http://')) {
             return $this->image_url;
         }
         

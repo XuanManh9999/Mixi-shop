@@ -86,7 +86,7 @@ class CouponController extends Controller
             'start_at' => 'required|date',
             'end_at' => 'nullable|date|after:start_at',
             'usage_limit' => 'nullable|integer|min:1',
-            'usage_per_user' => 'nullable|integer|min:1',
+            'usage_per_user' => 'required|integer|min:1',
         ], [
             'code.required' => 'Vui lòng nhập mã coupon',
             'code.unique' => 'Mã coupon đã tồn tại',
@@ -94,6 +94,7 @@ class CouponController extends Controller
             'value.required' => 'Vui lòng nhập giá trị giảm',
             'start_at.required' => 'Vui lòng chọn ngày bắt đầu',
             'end_at.after' => 'Ngày kết thúc phải sau ngày bắt đầu',
+            'usage_per_user.required' => 'Vui lòng nhập giới hạn mỗi user',
         ]);
 
         if ($validator->fails()) {
@@ -153,7 +154,7 @@ class CouponController extends Controller
             'start_at' => 'required|date',
             'end_at' => 'nullable|date|after:start_at',
             'usage_limit' => 'nullable|integer|min:1',
-            'usage_per_user' => 'nullable|integer|min:1',
+            'usage_per_user' => 'required|integer|min:1',
         ]);
 
         if ($validator->fails()) {

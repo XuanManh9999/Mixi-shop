@@ -242,14 +242,8 @@
                     </div>
                     
                     <!-- Pagination -->
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                        <div class="text-muted">
-                            Hiển thị {{ $orders->firstItem() ?? 0 }} - {{ $orders->lastItem() ?? 0 }} 
-                            trong tổng số {{ $orders->total() }} đơn hàng
-                        </div>
-                        <div>
-                            {{ $orders->links() }}
-                        </div>
+                    <div class="mt-4">
+                        {{ $orders->appends(request()->query())->links('custom.admin-pagination') }}
                     </div>
                 @else
                     <div class="text-center py-5">

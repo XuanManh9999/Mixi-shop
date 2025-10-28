@@ -212,6 +212,51 @@
             padding: 15px 20px;
         }
         
+        /* Custom Pagination for Admin */
+        .pagination {
+            margin-bottom: 0;
+        }
+        
+        .pagination .page-link {
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            padding: 8px 12px;
+            margin: 0 2px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .pagination .page-link:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #475569;
+            transform: translateY(-1px);
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%);
+            border-color: #ff6b6b;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        }
+        
+        .pagination .page-item.disabled .page-link {
+            color: #cbd5e1;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+        }
+        
+        .pagination .page-link:focus {
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+            border-color: #ff6b6b;
+        }
+        
+        .pagination-sm .page-link {
+            padding: 6px 10px;
+            font-size: 0.875rem;
+        }
+        
         .form-control, .form-select {
             border: 2px solid #e2e8f0;
             border-radius: 8px;
@@ -258,6 +303,45 @@
             
             .main-content {
                 margin-left: 0 !important;
+            }
+            
+            .content-wrapper {
+                padding: 0 15px 15px;
+            }
+            
+            .top-navbar {
+                padding: 10px 15px;
+                margin-bottom: 20px;
+            }
+            
+            .top-navbar h4 {
+                font-size: 1.25rem;
+            }
+            
+            .card-body {
+                padding: 15px;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+            
+            .pagination .page-link {
+                padding: 6px 8px;
+                font-size: 0.8rem;
+            }
+            
+            .stats-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .stats-number {
+                font-size: 1.5rem;
+            }
+            
+            .stats-icon {
+                font-size: 2rem;
             }
         }
     </style>
@@ -359,9 +443,14 @@
             <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
                 <!-- Top navbar -->
                 <div class="top-navbar d-flex justify-content-between align-items-center">
-                    <div>
-                        <h4 class="mb-0">@yield('page-title', 'Dashboard')</h4>
-                        <small class="text-muted">@yield('page-description', 'Quản lý hệ thống MixiShop')</small>
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-outline-secondary btn-sm d-md-none me-3" type="button" id="sidebarToggle">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <div>
+                            <h4 class="mb-0">@yield('page-title', 'Dashboard')</h4>
+                            <small class="text-muted">@yield('page-description', 'Quản lý hệ thống MixiShop')</small>
+                        </div>
                     </div>
                     <div class="d-flex align-items-center">
                         <span class="me-3">Xin chào, <strong>{{ Auth::user()->name }}</strong></span>
@@ -428,6 +517,39 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mobile sidebar toggle
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('show');
+            });
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(e) {
+                if (window.innerWidth <= 768) {
+                    if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                        sidebar.classList.remove('show');
+                    }
+                }
+            });
+        }
+        
+        // Auto-hide alerts after 5 seconds
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, 5000);
+        });
+    });
+    </script>
+    
     @stack('scripts')
 </body>
 </html>

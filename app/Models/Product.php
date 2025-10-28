@@ -118,8 +118,8 @@ class Product extends Model
     public function getMainImageAttribute()
     {
         if ($this->thumbnail_url) {
-            // Nếu là URL Cloudinary (https://), trả về trực tiếp
-            if (str_starts_with($this->thumbnail_url, 'https://')) {
+            // Nếu là URL đầy đủ (https:// hoặc http://), trả về trực tiếp (S3, Cloudinary, etc.)
+            if (str_starts_with($this->thumbnail_url, 'https://') || str_starts_with($this->thumbnail_url, 'http://')) {
                 return $this->thumbnail_url;
             }
             // Nếu thumbnail_url đã chứa 'storage/', sử dụng asset() trực tiếp

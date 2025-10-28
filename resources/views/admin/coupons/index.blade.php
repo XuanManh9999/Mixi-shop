@@ -255,7 +255,7 @@
                             trong tổng số {{ $coupons->total() }} mã giảm giá
                         </div>
                         <div>
-                            {{ $coupons->links() }}
+                            {{ $coupons->appends(request()->query())->links('custom.admin-pagination') }}
                         </div>
                     </div>
                 @else
