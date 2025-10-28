@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'MixiShop - Đặt đồ ăn nhanh')</title>
+    <title>@yield('title', 'MixiShop - Món ngon gần bạn')</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='favGradient' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23ff6b6b;stop-opacity:1' /><stop offset='100%' style='stop-color:%23ffa500;stop-opacity:1' /></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23favGradient)' opacity='0.9'/><circle cx='50' cy='50' r='38' fill='none' stroke='white' stroke-width='2'/><rect x='30' y='40' width='40' height='6' rx='3' fill='white'/><rect x='30' y='50' width='40' height='6' rx='3' fill='white'/><rect x='30' y='60' width='40' height='6' rx='3' fill='white'/></svg>">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
@@ -56,7 +59,24 @@
 <body>
     <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
         <div class="container">
-            <a class="navbar-brand" href="{{ route('home') }}">MixiShop</a>
+            <a class="navbar-brand d-flex align-items-center" href="{{ route('home') }}">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="40" height="40" class="me-2">
+                    <defs>
+                        <linearGradient id="storefrontGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ffa500;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Background circle -->
+                    <circle cx="50" cy="50" r="45" fill="url(#storefrontGradient)" opacity="0.15"/>
+                    <circle cx="50" cy="50" r="38" fill="none" stroke="url(#storefrontGradient)" stroke-width="2"/>
+                    <!-- Hamburger icon -->
+                    <rect x="30" y="40" width="40" height="6" rx="3" fill="url(#storefrontGradient)"/>
+                    <rect x="30" y="50" width="40" height="6" rx="3" fill="url(#storefrontGradient)"/>
+                    <rect x="30" y="60" width="40" height="6" rx="3" fill="url(#storefrontGradient)"/>
+                </svg>
+                <span style="font-weight: 700; color: #ff6b6b;">MixiShop</span>
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
                 <span class="navbar-toggler-icon"></span>
             </button>

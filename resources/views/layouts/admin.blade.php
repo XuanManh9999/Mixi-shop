@@ -6,6 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Admin - MixiShop')</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='adminFavGradient' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23667eea;stop-opacity:1' /><stop offset='100%' style='stop-color:%23764ba2;stop-opacity:1' /></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23adminFavGradient)' opacity='0.9'/><circle cx='50' cy='50' r='38' fill='none' stroke='white' stroke-width='2'/><text x='50' y='65' font-size='40' font-weight='bold' text-anchor='middle' fill='white'>M</text></svg>">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
@@ -354,8 +357,25 @@
             <!-- Sidebar -->
             <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
                 <div class="sidebar-brand">
-                    <h4><i class="fas fa-hamburger me-2"></i>MixiShop</h4>
-                    <small class="text-muted">Admin Panel</small>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="logo-icon-admin">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="45" height="45">
+                                <defs>
+                                    <linearGradient id="adminGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="50" cy="50" r="48" fill="url(#adminGradient)" opacity="0.2"/>
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="url(#adminGradient)" stroke-width="2"/>
+                                <text x="50" y="60" font-size="35" font-weight="bold" text-anchor="middle" fill="url(#adminGradient)">M</text>
+                            </svg>
+                        </div>
+                        <div class="ms-2">
+                            <h4 class="mb-0" style="color: white; font-weight: 700;">MixiShop</h4>
+                            <small class="text-light">Admin Panel</small>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="position-sticky">
