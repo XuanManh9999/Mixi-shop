@@ -9,21 +9,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('phone')->nullable()->after('email');
-            $table->boolean('is_admin')->default(false)->after('remember_token');
-        });
-    }
+    public function up(): void {}
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['phone', 'is_admin']);
-        });
-    }
+    public function down(): void {}
 };

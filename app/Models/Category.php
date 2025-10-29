@@ -4,27 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Category extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'parent_id',
         'name',
         'slug',
         'position',
-        'is_active',
-        'created_at',
-        'updated_at',
-        'deleted_at'
+        'is_active'
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'is_active' => 'boolean'
     ];
 
     /**

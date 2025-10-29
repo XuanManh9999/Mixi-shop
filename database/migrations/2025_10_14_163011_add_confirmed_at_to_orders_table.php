@@ -9,20 +9,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->timestamp('confirmed_at')->nullable()->after('placed_at');
-        });
-    }
+    public function up(): void {}
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn('confirmed_at');
-        });
-    }
+    public function down(): void {}
 };

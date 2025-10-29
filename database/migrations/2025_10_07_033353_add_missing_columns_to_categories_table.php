@@ -9,24 +9,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('categories', function (Blueprint $table) {
-            $table->foreignId('parent_id')->nullable()->after('id')->constrained('categories')->nullOnDelete();
-            $table->string('name')->after('parent_id');
-            $table->string('slug')->unique()->after('name');
-            $table->integer('position')->default(0)->after('slug');
-            $table->boolean('is_active')->default(true)->after('position');
-        });
-    }
+    public function up(): void {}
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
-        Schema::table('categories', function (Blueprint $table) {
-            $table->dropColumn(['parent_id', 'name', 'slug', 'position', 'is_active']);
-        });
-    }
+    public function down(): void {}
 };

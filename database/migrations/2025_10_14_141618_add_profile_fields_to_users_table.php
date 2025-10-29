@@ -9,21 +9,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            $table->text('address')->nullable()->after('phone');
-            $table->date('date_of_birth')->nullable()->after('address');
-        });
-    }
+    public function up(): void {}
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['address', 'date_of_birth']);
-        });
-    }
+    public function down(): void {}
 };

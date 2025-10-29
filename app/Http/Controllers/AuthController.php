@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use App\Notifications\TemporaryPasswordNotification;
 
 class AuthController extends Controller
 {
@@ -123,7 +124,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Gửi link reset mật khẩu
+     * Gửi mật khẩu tạm thời qua email (thay cho link reset)
      */
     public function sendResetLink(Request $request)
     {
@@ -150,11 +151,19 @@ class AuthController extends Controller
             ])->withInput();
         }
 
-        $status = Password::sendResetLink(['email' => $email]);
+        // Tạo mật khẩu tạm
+        $temporaryPassword = Str::password(12, symbols: true);
 
-        return $status === Password::RESET_LINK_SENT
-            ? back()->with(['status' => 'Link reset mật khẩu đã được gửi đến email của bạn!'])
-            : back()->withErrors(['email' => 'Không thể gửi link reset mật khẩu. Lỗi: ' . $status]);
+        // Cập nhật mật khẩu người dùng (đã băm)
+        $user->forceFill([
+            'password' => Hash::make($temporaryPassword),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        // Gửi email thông báo mật khẩu tạm
+        $user->notify(new TemporaryPasswordNotification($temporaryPassword));
+
+        return back()->with(['status' => 'Mật khẩu tạm thời đã được gửi đến email của bạn. Vui lòng đăng nhập và đổi mật khẩu ngay.']);
     }
 
     /**
