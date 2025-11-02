@@ -50,10 +50,6 @@
           @endforeach
         </div>
       </div>
-
-      <div class="col-lg-5 d-none d-lg-block">
-        <img class="w-100 rounded-3 shadow" src="{{ asset('images/products/banner.jpg') }}" alt="MixiShop banner">
-      </div>
     </div>
   </div>
 </section>
@@ -117,19 +113,42 @@
     </div>
   @endif
 
-  <!-- Banner ưu đãi -->
+  <!-- Banner ưu đãi - Load từ database -->
+  @if($featuredCoupon)
   <div class="mb-4">
     <div class="p-4 p-md-5 rounded-4"
          style="background:linear-gradient(135deg,#ffedd5,#fde68a); border:1px solid #ffe4b5;">
       <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
         <div>
-          <div class="h5 mb-1">Nhập mã MIXI20 giảm 20k cho đơn đầu tiên</div>
-          <div class="small text-muted">Áp dụng cho đơn từ 99k. Số lượng có hạn.</div>
+          <div class="h5 mb-1">
+            <i class="fas fa-gift me-2 text-danger"></i>
+            Nhập mã <strong class="text-danger">{{ $featuredCoupon->code }}</strong> 
+            giảm <strong>{{ $featuredCoupon->formatted_value }}</strong>
+            @if($featuredCoupon->type === 'percentage' && $featuredCoupon->max_discount_amount)
+              (tối đa {{ number_format($featuredCoupon->max_discount_amount, 0, ',', '.') }}₫)
+            @endif
+          </div>
+          <div class="small text-muted">
+            @if($featuredCoupon->min_order_amount)
+              Áp dụng cho đơn từ {{ number_format($featuredCoupon->min_order_amount, 0, ',', '.') }}₫.
+            @else
+              Áp dụng cho tất cả đơn hàng.
+            @endif
+            @if($featuredCoupon->usage_limit)
+              Còn {{ $featuredCoupon->usage_limit - $featuredCoupon->used_count }} lượt sử dụng.
+            @else
+              Số lượng không giới hạn.
+            @endif
+            @if($featuredCoupon->end_at)
+              Hết hạn: {{ $featuredCoupon->end_at->format('d/m/Y') }}.
+            @endif
+          </div>
         </div>
         <a href="{{ route('products.index') }}" class="btn btn-dark btn-lg">Đặt ngay</a>
       </div>
     </div>
   </div>
+  @endif
 
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="h5 mb-0">Ưu đãi</h2>

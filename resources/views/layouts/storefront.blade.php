@@ -220,7 +220,29 @@
   const badge = document.getElementById('cartBadge');
 
   function loadCart(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    try { 
+      const items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      // Auto-fix: Nếu giá quá cao (có thể bị nhân 100), tự động sửa
+      let needsFix = false;
+      items.forEach(item => {
+        // Giá bình thường của sản phẩm nên < 500,000đ
+        // Nếu giá > 1,000,000đ và chia hết cho 100, có thể bị lỗi
+        if (item.price && item.price > 1000000 && item.price % 100 === 0) {
+          const newPrice = item.price / 100;
+          // Chỉ fix nếu giá mới hợp lý (từ 10k đến 500k)
+          if (newPrice >= 10000 && newPrice <= 500000) {
+            console.warn(`Auto-fixing price for ${item.name}: ${item.price} -> ${newPrice}`);
+            item.price = newPrice;
+            needsFix = true;
+          }
+        }
+      });
+      // Lưu lại nếu đã fix
+      if (needsFix) {
+        saveCart(items);
+      }
+      return items;
+    }
     catch(e){ return []; }
   }
   function saveCart(items){ localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }

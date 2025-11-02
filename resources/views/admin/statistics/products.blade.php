@@ -45,12 +45,43 @@
     </div>
 </div>
 
-<!-- Best Sellers -->
+<!-- Charts: Best Sellers & Worst Sellers -->
+<div class="row mb-4">
+    <!-- Top 10 Sản Phẩm Bán Chạy -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="mb-0"><i class="fas fa-fire me-2"></i>Top 10 Sản Phẩm Bán Chạy</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 400px; position: relative;">
+                    <canvas id="bestSellersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top 10 Sản Phẩm Bán Kém -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Top 10 Sản Phẩm Bán Kém</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 400px; position: relative;">
+                    <canvas id="worstSellersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng Chi Tiết - Best Sellers -->
 <div class="row mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-fire me-2"></i>Top 20 Sản Phẩm Bán Chạy Nhất</h5>
+                <h5 class="mb-0"><i class="fas fa-table me-2"></i>Chi Tiết Top 20 Sản Phẩm Bán Chạy</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -194,4 +225,220 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Dữ liệu Top 10 Bán Chạy
+    const bestSellersData = @json($bestSellers->take(10)->values());
+    
+    // Dữ liệu Top 10 Bán Kém (query ngược lại)
+    const allProducts = @json($bestSellers);
+    const worstSellersData = allProducts.slice().reverse().slice(0, 10);
+    
+    // Chart Top 10 Bán Chạy
+    const ctxBest = document.getElementById('bestSellersChart');
+    if (ctxBest) {
+        new Chart(ctxBest, {
+            type: 'bar',
+            data: {
+                labels: bestSellersData.map(item => {
+                    // Rút gọn tên sản phẩm nếu quá dài
+                    const name = item.product_name;
+                    return name.length > 20 ? name.substring(0, 20) + '...' : name;
+                }),
+                datasets: [{
+                    label: 'Số lượng đã bán',
+                    data: bestSellersData.map(item => item.total_sold),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(199, 199, 199, 0.8)',
+                        'rgba(83, 102, 255, 0.8)',
+                        'rgba(255, 99, 255, 0.8)',
+                        'rgba(99, 255, 132, 0.8)',
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)',
+                        'rgba(83, 102, 255, 1)',
+                        'rgba(255, 99, 255, 1)',
+                        'rgba(99, 255, 132, 1)',
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const item = bestSellersData[context.dataIndex];
+                                return [
+                                    'Đã bán: ' + item.total_sold + ' sản phẩm',
+                                    'Doanh thu: ' + Number(item.total_revenue).toLocaleString('vi-VN') + '₫'
+                                ];
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Top 10 Sản Phẩm Bán Chạy Nhất',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: 'Số lượng đã bán'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Chart Top 10 Bán Kém  
+    const ctxWorst = document.getElementById('worstSellersChart');
+    if (ctxWorst && worstSellersData.length > 0) {
+        new Chart(ctxWorst, {
+            type: 'bar',
+            data: {
+                labels: worstSellersData.map(item => {
+                    const name = item.product_name;
+                    return name.length > 20 ? name.substring(0, 20) + '...' : name;
+                }),
+                datasets: [{
+                    label: 'Số lượng đã bán',
+                    data: worstSellersData.map(item => item.total_sold),
+                    backgroundColor: [
+                        'rgba(245, 87, 108, 0.8)',
+                        'rgba(240, 147, 251, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(201, 203, 207, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                    ],
+                    borderColor: [
+                        'rgba(245, 87, 108, 1)',
+                        'rgba(240, 147, 251, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(201, 203, 207, 1)',
+                        'rgba(255, 205, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const item = worstSellersData[context.dataIndex];
+                                return [
+                                    'Đã bán: ' + item.total_sold + ' sản phẩm',
+                                    'Doanh thu: ' + Number(item.total_revenue).toLocaleString('vi-VN') + '₫'
+                                ];
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Top 10 Sản Phẩm Bán Kém Nhất',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: 'Số lượng đã bán'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+@endpush
+
+@push('styles')
+<style>
+    /* Đảm bảo container biểu đồ có chiều cao cố định */
+    .card-body > div[style*="height"] {
+        height: 400px !important;
+        max-height: 400px !important;
+        overflow: hidden;
+    }
+    
+    .card-body > div[style*="height"] canvas {
+        max-height: 100% !important;
+        width: 100% !important;
+    }
+</style>
+@endpush
 

@@ -178,37 +178,37 @@
 @push('scripts')
 <script>
 (function(){
-    // Clear cart khi thanh toán thành công hoặc luôn luôn clear trên trang thank you
+    // LUÔN LUÔN clear cart khi vào trang thank you
     const STORAGE_KEY = 'mixishop_cart_v1';
     
-    @if(session('clear_cart') || $order->payment_status === 'paid')
-        // Clear cart khi thanh toán thành công
+    // Điều kiện clear cart:
+    // 1. VNPay thanh toán thành công (session clear_cart = true)
+    // 2. COD đã tạo đơn hàng (session order_created = true)
+    // 3. Đơn hàng đã thanh toán (payment_status = paid)
+    // 4. Đơn hàng đã confirmed
+    const shouldClearCart = {{ session('clear_cart') || session('order_created') || $order->payment_status === 'paid' || $order->status === 'confirmed' ? 'true' : 'false' }};
+    
+    if (shouldClearCart) {
         try { 
             localStorage.removeItem(STORAGE_KEY); 
-            console.log('Cart cleared - Payment successful');
+            console.log('✅ Cart cleared successfully');
+            
+            // Cập nhật badge giỏ hàng về 0
+            const badge = document.getElementById('cartBadge');
+            if (badge) { 
+                badge.textContent = '0'; 
+                badge.classList.add('d-none'); 
+            }
+            
+            @if(session('clear_cart'))
+                console.log('🎉 VNPay payment successful! Cart has been cleared.');
+            @elseif(session('order_created'))
+                console.log('🎉 Order created! Cart has been cleared.');
+            @endif
         } catch(e) {
-            console.error('Error clearing cart:', e);
+            console.error('❌ Error clearing cart:', e);
         }
-        
-        // Cập nhật badge
-        const badge = document.getElementById('cartBadge');
-        if (badge) { 
-            badge.textContent = '0'; 
-            badge.classList.add('d-none'); 
-        }
-        
-        // Hiển thị thông báo
-        @if(session('clear_cart'))
-            console.log('🎉 Thanh toán thành công! Giỏ hàng đã được xóa.');
-        @endif
-    @else
-        // Chỉ clear cart nếu đã hoàn tất đơn hàng (không phải pending)
-        if ('{{ $order->status }}' !== 'pending') {
-    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
-    const badge = document.getElementById('cartBadge');
-            if (badge) { badge.textContent = '0'; badge.classList.add('d-none'); }
-        }
-    @endif
+    }
 })();
 </script>
 @endpush

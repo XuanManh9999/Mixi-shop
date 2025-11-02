@@ -163,38 +163,48 @@
     </div>
 </div>
 
-<!-- Top Products -->
+<!-- Top Products với Biểu Đồ -->
 <div class="row mb-4">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
                 <h5 class="mb-0"><i class="fas fa-fire me-2"></i>Top 10 Sản Phẩm Bán Chạy</h5>
                 <a href="{{ route('admin.statistics.products') }}" class="btn btn-sm btn-light">
                     Xem tất cả
                 </a>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>Sản phẩm</th>
-                                <th>Đã bán</th>
-                                <th>Doanh thu</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($topProducts as $index => $item)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $item->product_name }}</td>
-                                <td><span class="badge bg-primary">{{ $item->total_sold }}</span></td>
-                                <td class="text-success fw-bold">{{ number_format($item->total_revenue, 0, ',', '.') }}₫</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                {{-- Biểu đồ cột --}}
+                <div style="height: 300px; position: relative;">
+                    <canvas id="topProductsChart"></canvas>
+                </div>
+                
+                {{-- Bảng tóm tắt --}}
+                <div class="mt-3">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Sản phẩm</th>
+                                    <th>Đã bán</th>
+                                    <th>Doanh thu</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($topProducts->take(5) as $index => $item)
+                                <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td class="text-truncate" style="max-width: 150px;" title="{{ $item->product_name }}">
+                                        {{ $item->product_name }}
+                                    </td>
+                                    <td><span class="badge bg-primary">{{ $item->total_sold }}</span></td>
+                                    <td class="text-success fw-bold">{{ number_format($item->total_revenue, 0, ',', '.') }}₫</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -260,6 +270,95 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Biểu đồ Top 10 Sản Phẩm Bán Chạy
+    const topProductsData = @json($topProducts->take(10)->values());
+    
+    const ctxTopProducts = document.getElementById('topProductsChart');
+    if (ctxTopProducts && topProductsData.length > 0) {
+        new Chart(ctxTopProducts, {
+            type: 'bar',
+            data: {
+                labels: topProductsData.map(item => {
+                    const name = item.product_name;
+                    return name.length > 15 ? name.substring(0, 15) + '...' : name;
+                }),
+                datasets: [{
+                    label: 'Số lượng đã bán',
+                    data: topProductsData.map(item => item.total_sold),
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 206, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)',
+                        'rgba(199, 199, 199, 0.8)',
+                        'rgba(83, 102, 255, 0.8)',
+                    ],
+                    borderColor: [
+                        'rgba(102, 126, 234, 1)',
+                        'rgba(118, 75, 162, 1)',
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)',
+                        'rgba(83, 102, 255, 1)',
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const item = topProductsData[context.dataIndex];
+                                return [
+                                    'Sản phẩm: ' + item.product_name,
+                                    'Đã bán: ' + item.total_sold + ' sản phẩm',
+                                    'Doanh thu: ' + Number(item.total_revenue).toLocaleString('vi-VN') + '₫'
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        },
+                        title: {
+                            display: true,
+                            text: 'Số lượng đã bán'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            font: {
+                                size: 10
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
     // 1. Revenue Chart
     const revenueCtx = document.getElementById('revenueChart').getContext('2d');
     const revenueData = @json($revenueByDate);
@@ -474,6 +573,19 @@ document.addEventListener('DOMContentLoaded', function() {
         display: block;
         margin-top: 8px;
         font-size: 0.85rem;
+    }
+    
+    /* Đảm bảo container biểu đồ có chiều cao cố định */
+    .card-body > div[style*="height"] {
+        height: 300px !important;
+        max-height: 300px !important;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .card-body > div[style*="height"] canvas {
+        max-height: 100% !important;
+        width: 100% !important;
     }
 </style>
 @endpush

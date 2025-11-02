@@ -130,11 +130,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/statistics/chart-data', [AdminStatisticsController::class, 'chartData'])->name('statistics.chart-data');
 });
 
-// Routes thanh toán
-// VNPay - không cần auth vì có thể thanh toán không cần đăng nhập
-Route::get('/payment/vnpay/{order}', [PaymentController::class, 'createVNPayPayment'])->name('payment.vnpay');
-    Route::get('/payment/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('payment.vnpay.callback');
+// Routes thanh toán VNPay
+// ⚠️ QUAN TRỌNG: Đặt routes cụ thể (callback, return) TRƯỚC route có parameter {order}
+// để tránh conflict khi Laravel match route
+Route::get('/payment/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('payment.vnpay.callback');
 Route::get('/payment/vnpay/return', [PaymentController::class, 'vnpayReturn'])->name('payment.vnpay.return');
+Route::get('/payment/vnpay/{order}', [PaymentController::class, 'createVNPayPayment'])->name('payment.vnpay');
 
 // Alternative callback routes để test
 Route::any('/vnpay/callback', [PaymentController::class, 'vnpayCallback'])->name('vnpay.callback.alt');

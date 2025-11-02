@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Coupon;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -37,7 +38,17 @@ class HomeController extends Controller
 
         $products = $productsQuery->paginate(12)->withQueryString();
 
-        return view('storefront.home', compact('categories','products','search','categorySlug'));
+        // Load mã giảm giá nổi bật để hiển thị trên banner
+        // Lấy 1 coupon active, valid, available, có min_order_amount thấp nhất
+        $featuredCoupon = Coupon::query()
+            ->active()
+            ->valid()
+            ->available()
+            ->orderBy('min_order_amount', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        return view('storefront.home', compact('categories','products','search','categorySlug','featuredCoupon'));
     }
 
     public function suggest(Request $request)
