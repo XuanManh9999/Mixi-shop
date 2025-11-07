@@ -28,6 +28,9 @@
         .product-img{aspect-ratio:4/3;object-fit:cover;width:100%}
         .price{font-weight:700;color:#e5533d}
         .compare{text-decoration:line-through;color:#adb5bd;font-weight:500}
+        /* Body layout */
+        html{height:100%}
+        body{min-height:100%;display:flex;flex-direction:column}
         /* Footer */
         .footer{background:#0f172a;color:#cbd5e1}
         .footer a{color:#cbd5e1;text-decoration:none}
@@ -150,11 +153,11 @@
 
     @yield('hero')
 
-    <main class="py-4">
+    <main class="py-4 flex-grow-1">
         @yield('content')
     </main>
 
-    <footer class="footer mt-5 pt-5">
+    <footer class="footer mt-auto pt-5">
         <div class="container">
             <div class="row g-4 pb-4">
                 <div class="col-lg-4">
