@@ -97,7 +97,7 @@
                         </thead>
                         <tbody>
                             @foreach($bestSellers as $index => $item)
-                            <tr>
+                            <tr style="cursor: pointer;" onclick="window.location.href='{{ route('admin.statistics.product-orders', $item->product_id) }}'">
                                 <td>
                                     @if($index < 3)
                                         <span class="badge bg-warning">
@@ -115,9 +115,13 @@
                                                  style="width: 40px; height: 40px; object-fit: cover;">
                                         @endif
                                         <div>
-                                            <div class="fw-semibold">{{ $item->product_name }}</div>
+                                            <a href="{{ route('admin.statistics.product-orders', $item->product_id) }}" 
+                                               class="fw-semibold text-decoration-none text-dark">
+                                                {{ $item->product_name }}
+                                                <i class="fas fa-external-link-alt ms-1 text-muted" style="font-size: 0.7rem;"></i>
+                                            </a>
                                             @if($item->product)
-                                                <small class="text-muted">{{ $item->product->sku }}</small>
+                                                <small class="text-muted d-block">{{ $item->product->sku }}</small>
                                             @endif
                                         </div>
                                     </div>

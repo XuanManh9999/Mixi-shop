@@ -126,6 +126,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Thống kê
     Route::get('/statistics', [AdminStatisticsController::class, 'index'])->name('statistics.index');
     Route::get('/statistics/products', [AdminStatisticsController::class, 'products'])->name('statistics.products');
+    Route::get('/statistics/products/{product}/orders', [AdminStatisticsController::class, 'productOrders'])->name('statistics.product-orders');
     Route::get('/statistics/customers', [AdminStatisticsController::class, 'customers'])->name('statistics.customers');
     Route::get('/statistics/chart-data', [AdminStatisticsController::class, 'chartData'])->name('statistics.chart-data');
 });

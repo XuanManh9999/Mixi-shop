@@ -10,7 +10,32 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
+                <!-- Quick Filter Buttons -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Lọc nhanh:</label>
+                    <div class="btn-group" role="group">
+                        <a href="{{ route('admin.statistics.index', ['period' => 'day']) }}" 
+                           class="btn btn-sm {{ $period === 'day' ? 'btn-primary' : 'btn-outline-primary' }}">
+                            <i class="fas fa-calendar-day me-1"></i>Hôm nay
+                        </a>
+                        <a href="{{ route('admin.statistics.index', ['period' => 'week']) }}" 
+                           class="btn btn-sm {{ $period === 'week' ? 'btn-primary' : 'btn-outline-primary' }}">
+                            <i class="fas fa-calendar-week me-1"></i>Tuần này
+                        </a>
+                        <a href="{{ route('admin.statistics.index', ['period' => 'month']) }}" 
+                           class="btn btn-sm {{ $period === 'month' ? 'btn-primary' : 'btn-outline-primary' }}">
+                            <i class="fas fa-calendar-alt me-1"></i>Tháng này
+                        </a>
+                        <a href="{{ route('admin.statistics.index', ['period' => 'quarter', 'quarter' => ceil(now()->month / 3), 'year' => now()->year]) }}" 
+                           class="btn btn-sm {{ $period === 'quarter' ? 'btn-primary' : 'btn-outline-primary' }}">
+                            <i class="fas fa-calendar me-1"></i>Quý này
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Custom Date Range -->
                 <form method="GET" action="{{ route('admin.statistics.index') }}" class="row g-3">
+                    <input type="hidden" name="period" value="custom">
                     <div class="col-md-4">
                         <label class="form-label">Từ ngày</label>
                         <input type="date" class="form-control" name="date_from" value="{{ $dateFrom }}">
@@ -40,7 +65,7 @@
             </div>
             <div class="stats-number">{{ number_format($overview['total_users']) }}</div>
             <div class="stats-label">Tổng Khách Hàng</div>
-            <small class="text-success">+{{ $overview['new_users_today'] }} hôm nay</small>
+            <small class="text-success">+{{ $overview['new_users_in_period'] }} trong kỳ</small>
         </div>
     </div>
     <div class="col-md-3">
@@ -58,9 +83,9 @@
             <div class="stats-icon text-warning">
                 <i class="fas fa-shopping-cart"></i>
             </div>
-            <div class="stats-number">{{ number_format($overview['total_orders']) }}</div>
-            <div class="stats-label">Tổng Đơn Hàng</div>
-            <small class="text-success">+{{ $overview['orders_today'] }} hôm nay</small>
+            <div class="stats-number">{{ number_format($overview['total_orders_in_period']) }}</div>
+            <div class="stats-label">Đơn Hàng Trong Kỳ</div>
+            <small class="text-muted">Tổng: {{ number_format($overview['total_orders_in_period']) }}</small>
         </div>
     </div>
     <div class="col-md-3">
@@ -68,9 +93,9 @@
             <div class="stats-icon text-info">
                 <i class="fas fa-coins"></i>
             </div>
-            <div class="stats-number">{{ number_format($overview['total_revenue'], 0, ',', '.') }}₫</div>
-            <div class="stats-label">Tổng Doanh Thu</div>
-            <small class="text-success">{{ number_format($overview['revenue_today'], 0, ',', '.') }}₫ hôm nay</small>
+            <div class="stats-number">{{ number_format($overview['total_revenue_in_period'], 0, ',', '.') }}₫</div>
+            <div class="stats-label">Doanh Thu Trong Kỳ</div>
+            <small class="text-success">{{ number_format($overview['total_revenue_in_period'], 0, ',', '.') }}₫</small>
         </div>
     </div>
 </div>
@@ -193,10 +218,13 @@
                             </thead>
                             <tbody>
                                 @foreach($topProducts->take(5) as $index => $item)
-                                <tr>
+                                <tr style="cursor: pointer;" onclick="window.location.href='{{ route('admin.statistics.product-orders', $item->product_id) }}'">
                                     <td>{{ $index + 1 }}</td>
                                     <td class="text-truncate" style="max-width: 150px;" title="{{ $item->product_name }}">
-                                        {{ $item->product_name }}
+                                        <a href="{{ route('admin.statistics.product-orders', $item->product_id) }}" class="text-decoration-none text-dark">
+                                            {{ $item->product_name }}
+                                            <i class="fas fa-external-link-alt ms-1 text-muted" style="font-size: 0.7rem;"></i>
+                                        </a>
                                     </td>
                                     <td><span class="badge bg-primary">{{ $item->total_sold }}</span></td>
                                     <td class="text-success fw-bold">{{ number_format($item->total_revenue, 0, ',', '.') }}₫</td>
@@ -406,16 +434,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 2. Order Status Pie Chart
+    // 2. Order Status Pie Chart với %
     const orderStatusCtx = document.getElementById('orderStatusChart').getContext('2d');
     const orderStatusData = @json($ordersByStatus);
+    const orderStatusValues = Object.values(orderStatusData);
+    const orderStatusTotal = orderStatusValues.reduce((a, b) => a + b, 0);
     
     new Chart(orderStatusCtx, {
         type: 'doughnut',
         data: {
-            labels: Object.keys(orderStatusData),
+            labels: Object.keys(orderStatusData).map((key, idx) => {
+                const value = orderStatusValues[idx];
+                const percentage = orderStatusTotal > 0 ? ((value / orderStatusTotal) * 100).toFixed(1) : 0;
+                return `${key} (${percentage}%)`;
+            }),
             datasets: [{
-                data: Object.values(orderStatusData),
+                data: orderStatusValues,
                 backgroundColor: [
                     '#ffc107',
                     '#17a2b8',
@@ -432,29 +466,43 @@ document.addEventListener('DOMContentLoaded', function() {
             plugins: {
                 legend: {
                     position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const percentage = orderStatusTotal > 0 ? ((value / orderStatusTotal) * 100).toFixed(1) : 0;
+                            return `${label.split(' (')[0]}: ${value} đơn (${percentage}%)`;
+                        }
+                    }
                 }
             }
         }
     });
 
-    // 3. Payment Methods Pie Chart
+    // 3. Payment Methods Pie Chart với %
     const paymentMethodCtx = document.getElementById('paymentMethodChart').getContext('2d');
     const paymentMethodData = @json($paymentMethods);
+    const paymentMethodTotals = paymentMethodData.map(p => p.total);
+    const paymentMethodTotal = paymentMethodTotals.reduce((a, b) => a + b, 0);
     
     new Chart(paymentMethodCtx, {
         type: 'pie',
         data: {
-            labels: paymentMethodData.map(p => {
+            labels: paymentMethodData.map((p, idx) => {
                 const labels = {
                     'vnpay': 'VNPay',
                     'momo': 'MoMo',
                     'cash': 'Tiền mặt',
                     'bank_transfer': 'Chuyển khoản'
                 };
-                return labels[p.provider] || p.provider;
+                const label = labels[p.provider] || p.provider;
+                const percentage = paymentMethodTotal > 0 ? ((paymentMethodTotals[idx] / paymentMethodTotal) * 100).toFixed(1) : 0;
+                return `${label} (${percentage}%)`;
             }),
             datasets: [{
-                data: paymentMethodData.map(p => p.total),
+                data: paymentMethodTotals,
                 backgroundColor: [
                     '#667eea',
                     '#e91e63',
@@ -473,11 +521,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     callbacks: {
                         label: function(context) {
                             const label = context.label || '';
-                            const value = new Intl.NumberFormat('vi-VN', {
+                            const value = context.parsed || 0;
+                            const percentage = paymentMethodTotal > 0 ? ((value / paymentMethodTotal) * 100).toFixed(1) : 0;
+                            const formattedValue = new Intl.NumberFormat('vi-VN', {
                                 style: 'currency',
                                 currency: 'VND'
-                            }).format(context.parsed);
-                            return label + ': ' + value;
+                            }).format(value);
+                            return `${label.split(' (')[0]}: ${formattedValue} (${percentage}%)`;
                         }
                     }
                 }

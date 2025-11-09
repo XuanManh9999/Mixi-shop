@@ -21,59 +21,102 @@ class StatisticsController extends Controller
      */
     public function index(Request $request)
     {
-        // Lấy khoảng thời gian (mặc định: 30 ngày gần nhất)
-        $dateFrom = $request->get('date_from', now()->subDays(30)->toDateString());
-        $dateTo = $request->get('date_to', now()->toDateString());
+        // Xử lý filter theo quý, tháng, tuần, ngày
+        $period = $request->get('period', 'custom'); // day, week, month, quarter, custom
+        $dateFrom = null;
+        $dateTo = null;
+        
+        switch($period) {
+            case 'day':
+                $dateFrom = now()->toDateString();
+                $dateTo = now()->toDateString();
+                break;
+            case 'week':
+                $dateFrom = now()->startOfWeek()->toDateString();
+                $dateTo = now()->endOfWeek()->toDateString();
+                break;
+            case 'month':
+                $dateFrom = now()->startOfMonth()->toDateString();
+                $dateTo = now()->endOfMonth()->toDateString();
+                break;
+            case 'quarter':
+                $quarter = $request->get('quarter', ceil(now()->month / 3));
+                $year = $request->get('year', now()->year);
+                $monthStart = (($quarter - 1) * 3) + 1;
+                $dateFrom = Carbon::create($year, $monthStart, 1)->startOfMonth()->toDateString();
+                $dateTo = Carbon::create($year, $monthStart + 2, 1)->endOfMonth()->toDateString();
+                break;
+            default:
+                // Custom date range
+                $dateFrom = $request->get('date_from', now()->subDays(30)->toDateString());
+                $dateTo = $request->get('date_to', now()->toDateString());
+        }
 
-        // 1. TỔNG QUAN
+        // 1. TỔNG QUAN - Filter theo date range
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
         $overview = [
             'total_users' => User::count(),
-            'new_users_today' => User::whereDate('created_at', today())->count(),
+            'new_users_in_period' => User::whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])->count(),
             'total_products' => Product::count(),
             'active_products' => Product::where('is_active', 1)->count(),
-            'total_orders' => Order::count(),
-            'orders_today' => Order::whereDate('created_at', today())->count(),
-            'total_revenue' => Payment::where('status', 'paid')->sum('amount'),
-            'revenue_today' => Payment::where('status', 'paid')->whereDate('paid_at', today())->sum('amount'),
+            'total_orders_in_period' => Order::where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+                ->where('payment_status', 'paid') // VÀ đã thanh toán
+                ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
+                ->count(),
+            'total_revenue_in_period' => Payment::where('status', 'paid')
+                ->whereHas('order', function($q) {
+                    $q->where('status', 'delivered'); // Chỉ doanh thu từ đơn hàng đã giao hàng
+                })
+                ->whereBetween('paid_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
+                ->sum('amount'),
         ];
 
         // 2. DOANH THU THEO NGÀY (30 ngày gần nhất hoặc filter)
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
         $revenueByDate = Payment::select(
                 DB::raw('DATE(paid_at) as date'),
                 DB::raw('COUNT(*) as count'),
                 DB::raw('SUM(amount) as total')
             )
             ->where('status', 'paid')
+            ->whereHas('order', function($q) {
+                $q->where('status', 'delivered'); // Chỉ doanh thu từ đơn hàng đã giao hàng
+            })
             ->whereDate('paid_at', '>=', $dateFrom)
             ->whereDate('paid_at', '<=', $dateTo)
             ->groupBy('date')
             ->orderBy('date')
             ->get();
 
-        // 3. ĐỚN HÀNG THEO TRẠNG THÁI
+        // 3. ĐỚN HÀNG THEO TRẠNG THÁI - Filter theo date range
         $ordersByStatus = Order::select('status', DB::raw('COUNT(*) as count'))
+            ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
             ->groupBy('status')
             ->get()
             ->mapWithKeys(function($item) {
                 return [$item->status => $item->count];
             });
 
-        // 4. SẢN PHẨM BÁN CHẠY (Top 10)
+        // 4. SẢN PHẨM BÁN CHẠY (Top 10) - Filter theo date range
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
         $topProducts = OrderItem::select(
                 'product_id',
                 'product_name',
                 DB::raw('SUM(quantity) as total_sold'),
                 DB::raw('SUM(total_price) as total_revenue')
             )
-            ->whereHas('order', function($q) {
-                $q->whereIn('status', ['confirmed', 'preparing', 'shipping', 'delivered']);
+            ->whereHas('order', function($q) use ($dateFrom, $dateTo) {
+                $q->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+                  ->where('payment_status', 'paid') // VÀ đã thanh toán
+                  ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
             })
             ->groupBy('product_id', 'product_name')
             ->orderBy('total_sold', 'desc')
             ->limit(10)
             ->get();
 
-        // 5. DANH MỤC BÁN CHẠY
+        // 5. DANH MỤC BÁN CHẠY - Filter theo date range
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
         $topCategories = OrderItem::select(
                 'products.category_id',
                 'categories.name as category_name',
@@ -82,20 +125,28 @@ class StatisticsController extends Controller
             )
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->whereHas('order', function($q) {
-                $q->whereIn('status', ['confirmed', 'preparing', 'shipping', 'delivered']);
+            ->whereHas('order', function($q) use ($dateFrom, $dateTo) {
+                $q->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+                  ->where('payment_status', 'paid') // VÀ đã thanh toán
+                  ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
             })
             ->groupBy('products.category_id', 'categories.name')
             ->orderBy('total_revenue', 'desc')
             ->get();
 
-        // 6. PHƯƠNG THỨC THANH TOÁN
+        // 6. PHƯƠNG THỨC THANH TOÁN - Filter theo date range
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
         $paymentMethods = Payment::select('provider', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
             ->where('status', 'paid')
+            ->whereHas('order', function($q) {
+                $q->where('status', 'delivered'); // Chỉ doanh thu từ đơn hàng đã giao hàng
+            })
+            ->whereBetween('paid_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
             ->groupBy('provider')
             ->get();
 
-        // 7. KHÁCH HÀNG MUA NHIỀU NHẤT (Top 10)
+        // 7. KHÁCH HÀNG MUA NHIỀU NHẤT (Top 10) - Filter theo date range
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
         $topCustomers = Order::select(
                 'user_id',
                 'users.name',
@@ -104,7 +155,9 @@ class StatisticsController extends Controller
                 DB::raw('SUM(total_amount) as total_spent')
             )
             ->join('users', 'orders.user_id', '=', 'users.id')
-            ->whereIn('status', ['confirmed', 'preparing', 'shipping', 'delivered'])
+            ->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+            ->where('payment_status', 'paid') // VÀ đã thanh toán
+            ->whereBetween('orders.created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
             ->groupBy('user_id', 'users.name', 'users.email')
             ->orderBy('total_spent', 'desc')
             ->limit(10)
@@ -177,6 +230,55 @@ class StatisticsController extends Controller
             'currentMonth',
             'lastMonth',
             'comparison',
+            'dateFrom',
+            'dateTo',
+            'period'
+        ));
+    }
+
+    /**
+     * Xem lịch sử đặt hàng của sản phẩm
+     */
+    public function productOrders($productId, Request $request)
+    {
+        $product = Product::findOrFail($productId);
+        
+        $dateFrom = $request->get('date_from', now()->subDays(30)->toDateString());
+        $dateTo = $request->get('date_to', now()->toDateString());
+        
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
+        $orderItems = OrderItem::with(['order.user'])
+            ->where('product_id', $productId)
+            ->whereHas('order', function($q) use ($dateFrom, $dateTo) {
+                $q->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+                  ->where('payment_status', 'paid') // VÀ đã thanh toán
+                  ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        $stats = [
+            'total_orders' => $orderItems->total(),
+            'total_quantity' => OrderItem::where('product_id', $productId)
+                ->whereHas('order', function($q) use ($dateFrom, $dateTo) {
+                    $q->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+                      ->where('payment_status', 'paid') // VÀ đã thanh toán
+                      ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
+                })
+                ->sum('quantity'),
+            'total_revenue' => OrderItem::where('product_id', $productId)
+                ->whereHas('order', function($q) use ($dateFrom, $dateTo) {
+                    $q->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+                      ->where('payment_status', 'paid') // VÀ đã thanh toán
+                      ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59']);
+                })
+                ->sum('total_price'),
+        ];
+        
+        return view('admin.statistics.product-orders', compact(
+            'product',
+            'orderItems',
+            'stats',
             'dateFrom',
             'dateTo'
         ));
@@ -261,6 +363,7 @@ class StatisticsController extends Controller
     public function products(Request $request)
     {
         // Sản phẩm bán chạy
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
         $bestSellers = OrderItem::select(
                 'product_id',
                 'product_name',
@@ -269,7 +372,8 @@ class StatisticsController extends Controller
             )
             ->with('product')
             ->whereHas('order', function($q) {
-                $q->whereIn('status', ['confirmed', 'preparing', 'shipping', 'delivered']);
+                $q->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+                  ->where('payment_status', 'paid'); // VÀ đã thanh toán
             })
             ->groupBy('product_id', 'product_name')
             ->orderBy('total_sold', 'desc')
@@ -308,6 +412,7 @@ class StatisticsController extends Controller
     public function customers(Request $request)
     {
         // Top khách hàng
+        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
         $topCustomers = Order::select(
                 'user_id',
                 'users.name',
@@ -318,7 +423,8 @@ class StatisticsController extends Controller
                 DB::raw('AVG(total_amount) as avg_order_value')
             )
             ->join('users', 'orders.user_id', '=', 'users.id')
-            ->whereIn('status', ['confirmed', 'preparing', 'shipping', 'delivered'])
+            ->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+            ->where('payment_status', 'paid') // VÀ đã thanh toán
             ->groupBy('user_id', 'users.name', 'users.email', 'users.phone')
             ->orderBy('total_spent', 'desc')
             ->limit(20)
