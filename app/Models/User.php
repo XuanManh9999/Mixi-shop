@@ -96,4 +96,20 @@ class User extends Authenticatable
     {
         return $query->where('is_admin', 0);
     }
+
+    /**
+     * Relationship với LoginHistory
+     */
+    public function loginHistories()
+    {
+        return $this->hasMany(LoginHistory::class);
+    }
+
+    /**
+     * Lấy lần đăng nhập gần nhất
+     */
+    public function lastLogin()
+    {
+        return $this->loginHistories()->latest('login_at')->first();
+    }
 }

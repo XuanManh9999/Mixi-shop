@@ -395,6 +395,13 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.login-history*') ? 'active' : '' }}" 
+                               href="{{ route('admin.login-history.index') }}">
+                                <i class="fas fa-history"></i>
+                                Lịch sử đăng nhập
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.categories*') ? 'active' : '' }}" 
                                href="{{ route('admin.categories.index') }}">
                                 <i class="fas fa-tags"></i>

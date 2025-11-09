@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\LoginHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -90,8 +91,17 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
             
+            // Ghi lại lịch sử đăng nhập
+            $user = Auth::user();
+            LoginHistory::create([
+                'user_id' => $user->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'login_at' => now(),
+            ]);
+            
             // Kiểm tra nếu user là admin thì chuyển đến admin dashboard
-            if (Auth::user()->is_admin) {
+            if ($user->is_admin) {
                 return redirect()->route('admin.dashboard')->with('success', 'Chào mừng Admin đến với MixiShop!');
             }
             
@@ -108,6 +118,19 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        // Cập nhật logout_at cho lần đăng nhập gần nhất
+        if (Auth::check()) {
+            $user = Auth::user();
+            $lastLogin = $user->loginHistories()
+                ->whereNull('logout_at')
+                ->latest('login_at')
+                ->first();
+            
+            if ($lastLogin) {
+                $lastLogin->update(['logout_at' => now()]);
+            }
+        }
+        
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

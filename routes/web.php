@@ -129,6 +129,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/statistics/products/{product}/orders', [AdminStatisticsController::class, 'productOrders'])->name('statistics.product-orders');
     Route::get('/statistics/customers', [AdminStatisticsController::class, 'customers'])->name('statistics.customers');
     Route::get('/statistics/chart-data', [AdminStatisticsController::class, 'chartData'])->name('statistics.chart-data');
+    
+    // Lịch sử đăng nhập
+    Route::get('/login-history', [\App\Http\Controllers\Admin\LoginHistoryController::class, 'index'])->name('login-history.index');
+    Route::get('/login-history/user/{user}', [\App\Http\Controllers\Admin\LoginHistoryController::class, 'userHistory'])->name('login-history.user');
 });
 
 // Routes thanh toán VNPay
