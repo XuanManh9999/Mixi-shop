@@ -135,15 +135,21 @@ class StatisticsController extends Controller
             ->get();
 
         // 6. PHƯƠNG THỨC THANH TOÁN - Filter theo date range
-        // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
-        $paymentMethods = Payment::select('provider', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
-            ->where('status', 'paid')
-            ->whereHas('order', function($q) {
-                $q->where('status', 'delivered'); // Chỉ doanh thu từ đơn hàng đã giao hàng
-            })
-            ->whereBetween('paid_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
-            ->groupBy('provider')
-            ->get();
+        // Lấy từ bảng orders để phản ánh cả COD và các phương thức offline khác
+        $paymentMethods = Order::select(
+                'payment_method',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(total_amount) as total')
+            )
+            ->where('status', 'delivered') // Chỉ đơn hàng đã giao hàng
+            ->where('payment_status', 'paid') // VÀ đã thanh toán
+            ->whereBetween('created_at', [$dateFrom . ' 00:00:00', $dateTo . ' 23:59:59'])
+            ->groupBy('payment_method')
+            ->get()
+            ->map(function ($item) {
+                $item->provider = $item->payment_method ?? 'unknown';
+                return $item;
+            });
 
         // 7. KHÁCH HÀNG MUA NHIỀU NHẤT (Top 10) - Filter theo date range
         // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)

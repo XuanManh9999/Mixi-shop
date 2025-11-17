@@ -495,7 +495,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     'vnpay': 'VNPay',
                     'momo': 'MoMo',
                     'cash': 'Tiền mặt',
-                    'bank_transfer': 'Chuyển khoản'
+                    'cod': 'Thanh toán khi nhận hàng',
+                    'bank_transfer': 'Chuyển khoản',
+                    'unknown': 'Khác'
                 };
                 const label = labels[p.provider] || p.provider;
                 const percentage = paymentMethodTotal > 0 ? ((paymentMethodTotals[idx] / paymentMethodTotal) * 100).toFixed(1) : 0;
