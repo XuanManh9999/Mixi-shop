@@ -86,7 +86,12 @@ class StatisticsController extends Controller
             ->whereDate('paid_at', '<=', $dateTo)
             ->groupBy('date')
             ->orderBy('date')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $item->count = (int) $item->count;
+                $item->total = (float) $item->total;
+                return $item;
+            });
 
         // 3. ĐỚN HÀNG THEO TRẠNG THÁI - Filter theo date range
         $ordersByStatus = Order::select('status', DB::raw('COUNT(*) as count'))
@@ -94,7 +99,7 @@ class StatisticsController extends Controller
             ->groupBy('status')
             ->get()
             ->mapWithKeys(function($item) {
-                return [$item->status => $item->count];
+                return [$item->status => (int) $item->count];
             });
 
         // 4. SẢN PHẨM BÁN CHẠY (Top 10) - Filter theo date range
@@ -113,7 +118,12 @@ class StatisticsController extends Controller
             ->groupBy('product_id', 'product_name')
             ->orderBy('total_sold', 'desc')
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $item->total_sold = (int) $item->total_sold;
+                $item->total_revenue = (float) $item->total_revenue;
+                return $item;
+            });
 
         // 5. DANH MỤC BÁN CHẠY - Filter theo date range
         // CHỈ tính đơn hàng đã giao hàng (delivered) VÀ đã thanh toán (paid)
@@ -132,7 +142,12 @@ class StatisticsController extends Controller
             })
             ->groupBy('products.category_id', 'categories.name')
             ->orderBy('total_revenue', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $item->total_sold = (int) $item->total_sold;
+                $item->total_revenue = (float) $item->total_revenue;
+                return $item;
+            });
 
         // 6. PHƯƠNG THỨC THANH TOÁN - Filter theo date range
         // Lấy từ bảng orders để phản ánh cả COD và các phương thức offline khác
@@ -148,6 +163,8 @@ class StatisticsController extends Controller
             ->get()
             ->map(function ($item) {
                 $item->provider = $item->payment_method ?? 'unknown';
+                $item->count = (int) $item->count;
+                $item->total = (float) $item->total;
                 return $item;
             });
 
@@ -167,7 +184,12 @@ class StatisticsController extends Controller
             ->groupBy('user_id', 'users.name', 'users.email')
             ->orderBy('total_spent', 'desc')
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $item->order_count = (int) $item->order_count;
+                $item->total_spent = (float) $item->total_spent;
+                return $item;
+            });
 
         // 8. MÃ GIẢM GIÁ ĐƯỢC SỬ DỤNG NHIỀU NHẤT
         $topCoupons = Coupon::select('code', 'type', 'value', 'used_count')
