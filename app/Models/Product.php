@@ -55,6 +55,38 @@ class Product extends Model
     }
 
     /**
+     * Relationship với Reviews
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
+     * Relationship với Reviews đã được duyệt
+     */
+    public function approvedReviews()
+    {
+        return $this->hasMany(Review::class)->where('is_approved', true);
+    }
+
+    /**
+     * Lấy rating trung bình
+     */
+    public function getAverageRatingAttribute()
+    {
+        return Review::getAverageRating($this->id);
+    }
+
+    /**
+     * Lấy số lượng reviews
+     */
+    public function getReviewsCountAttribute()
+    {
+        return $this->approvedReviews()->count();
+    }
+
+    /**
      * Scope cho products active
      */
     public function scopeActive($query)

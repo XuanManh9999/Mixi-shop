@@ -77,6 +77,14 @@ class Order extends Model
     }
 
     /**
+     * Relationship với Reviews
+     */
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+
+    /**
      * Get latest payment
      */
     public function latestPayment()
@@ -149,8 +157,6 @@ class Order extends Model
     {
         $methods = [
             'cod' => 'Thanh toán khi nhận hàng',
-            'bank_transfer' => 'Chuyển khoản ngân hàng',
-            'momo' => 'Ví MoMo',
             'vnpay' => 'VNPay'
         ];
 

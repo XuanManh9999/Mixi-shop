@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\Review;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -19,6 +20,9 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
+        // Load relationships
+        $product->load(['category', 'images', 'approvedReviews.user']);
+        
         $related = Product::query()
             ->active()
             ->inStock()
@@ -27,6 +31,11 @@ class ProductController extends Controller
             ->limit(8)
             ->get();
 
-        return view('storefront.products.show', compact('product','related'));
+        // Lấy reviews và thống kê rating
+        $reviews = $product->reviews()->where('is_approved', true)->with('user')->latest()->paginate(5);
+        $averageRating = $product->average_rating;
+        $ratingCounts = Review::getRatingCounts($product->id);
+
+        return view('storefront.products.show', compact('product', 'related', 'reviews', 'averageRating', 'ratingCounts'));
     }
 }

@@ -29,6 +29,26 @@
         <div class="col-lg-6">
             <h1 class="h3">{{ $product->name }}</h1>
             <div class="mb-2 text-muted">{{ optional($product->category)->name }}</div>
+            
+            <!-- Rating Display -->
+            @php
+                $avgRating = $product->average_rating ?? 0;
+                $reviewsCount = $product->reviews_count ?? 0;
+            @endphp
+            @if($reviewsCount > 0)
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        @for($i = 1; $i <= 5; $i++)
+                            <i class="fas fa-star {{ $i <= round($avgRating) ? 'text-warning' : 'text-muted' }}"></i>
+                        @endfor
+                        <span class="ms-2 fw-bold">{{ number_format($avgRating, 1) }}</span>
+                        <a href="{{ route('reviews.index', $product->slug) }}" class="ms-2 text-decoration-none">
+                            <small class="text-muted">({{ $reviewsCount }} đánh giá)</small>
+                        </a>
+                    </div>
+                </div>
+            @endif
+            
             <div class="fs-4 text-danger fw-bold mb-3">{{ $product->formatted_price }}
                 @if($product->formatted_compare_price)
                     <span class="fs-6 text-muted text-decoration-line-through ms-2">{{ $product->formatted_compare_price }}</span>
@@ -50,6 +70,62 @@
 
         </div>
     </div>
+
+    <!-- Reviews Section -->
+    @php
+        $topReviews = $product->approvedReviews()->with('user')->latest()->take(5)->get();
+    @endphp
+    @if($topReviews->count() > 0)
+        <hr class="my-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 mb-0">Đánh giá sản phẩm</h2>
+            <a href="{{ route('reviews.index', $product->slug) }}" class="btn btn-outline-primary btn-sm">
+                Xem tất cả đánh giá <i class="fas fa-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="row g-3">
+            @foreach($topReviews as $review)
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start mb-2">
+                                <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 40px; height: 40px;">
+                                    {{ strtoupper(substr($review->user->name, 0, 1)) }}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ $review->user->name }}</h6>
+                                    <div class="rating-display mb-1">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <i class="fas fa-star {{ $i <= $review->rating ? 'text-warning' : 'text-muted' }}" style="font-size: 0.8rem;"></i>
+                                        @endfor
+                                    </div>
+                                    <small class="text-muted">{{ $review->created_at->format('d/m/Y') }}</small>
+                                </div>
+                            </div>
+                            @if($review->comment)
+                                <div class="mb-2 small review-content">
+                                    @php
+                                        $textContent = strip_tags($review->comment);
+                                        $preview = \Illuminate\Support\Str::limit($textContent, 150);
+                                    @endphp
+                                    {{ $preview }}
+                                    @if(strlen($textContent) > 150)
+                                        <a href="{{ route('reviews.show', $review->id) }}" class="text-decoration-none">... xem thêm</a>
+                                    @endif
+                                </div>
+                            @endif
+                            <div class="mt-2">
+                                <a href="{{ route('reviews.show', $review->id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>Xem chi tiết
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
 
     @if($related->count())
         <hr class="my-4">

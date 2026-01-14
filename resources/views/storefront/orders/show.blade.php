@@ -151,6 +151,25 @@
                             <div class="mt-1">
                                 <span class="text-muted">{{ number_format($item->unit_price, 0, ',', '.') }}₫ × {{ $item->quantity }}</span>
                             </div>
+                            @if($order->status === 'delivered' && auth()->check() && auth()->id() === $order->user_id)
+                                @php
+                                    $hasReviewed = \App\Models\Review::hasReviewed($order->id, $item->product_id, auth()->id());
+                                @endphp
+                                @if($hasReviewed)
+                                    <div class="mt-2">
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Đã đánh giá
+                                        </span>
+                                    </div>
+                                @else
+                                    <div class="mt-2">
+                                        <a href="{{ route('reviews.create', $order) }}?product_id={{ $item->product_id }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-star me-1"></i>Đánh giá sản phẩm
+                                        </a>
+                                    </div>
+                                @endif
+                            @endif
                         </div>
                         <div class="text-end">
                             <strong>{{ number_format($item->total_price, 0, ',', '.') }}₫</strong>

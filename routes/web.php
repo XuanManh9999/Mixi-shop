@@ -51,6 +51,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders/{order}', [\App\Http\Controllers\OrderController::class, 'show'])->name('orders.show');
     Route::patch('/orders/{order}/cancel', [\App\Http\Controllers\OrderController::class, 'cancel'])->name('orders.cancel');
     
+    // Đánh giá đơn hàng
+    Route::get('/orders/{order}/review', [\App\Http\Controllers\ReviewController::class, 'create'])->name('reviews.create');
+    Route::post('/orders/{order}/review', [\App\Http\Controllers\ReviewController::class, 'store'])->name('reviews.store');
+    Route::delete('/reviews/{review}', [\App\Http\Controllers\ReviewController::class, 'destroy'])->name('reviews.destroy');
+    
     // Quản lý thông tin cá nhân
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
     Route::put('/profile', [\App\Http\Controllers\ProfileController::class, 'updateProfile'])->name('profile.update');
@@ -61,6 +66,9 @@ Route::middleware('auth')->group(function () {
 // Routes frontend sản phẩm và danh mục
 Route::get('/products', [FrontProductController::class, 'index'])->name('products.index');
 Route::get('/products/{product:slug}', [FrontProductController::class, 'show'])->name('products.show');
+// Đánh giá sản phẩm (public)
+Route::get('/products/{product:slug}/reviews', [\App\Http\Controllers\ReviewController::class, 'index'])->name('reviews.index');
+Route::get('/reviews/{review}', [\App\Http\Controllers\ReviewController::class, 'show'])->name('reviews.show');
 // Có thể mở rộng sau: xem theo danh mục
 Route::get('/c/{category:slug}', [FrontCategoryController::class, 'show'])->name('categories.show');
 // Cart page (render bằng JS + localStorage)
@@ -133,6 +141,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Lịch sử đăng nhập
     Route::get('/login-history', [\App\Http\Controllers\Admin\LoginHistoryController::class, 'index'])->name('login-history.index');
     Route::get('/login-history/user/{user}', [\App\Http\Controllers\Admin\LoginHistoryController::class, 'userHistory'])->name('login-history.user');
+    
+    // Quản lý đánh giá
+    Route::resource('reviews', \App\Http\Controllers\Admin\ReviewController::class)->only(['index', 'destroy']);
+    Route::post('/reviews/{review}/approve', [\App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('reviews.approve');
+    Route::post('/reviews/{review}/reject', [\App\Http\Controllers\Admin\ReviewController::class, 'reject'])->name('reviews.reject');
+    Route::post('/reviews/bulk-action', [\App\Http\Controllers\Admin\ReviewController::class, 'bulkAction'])->name('reviews.bulk-action');
 });
 
 // Routes thanh toán VNPay

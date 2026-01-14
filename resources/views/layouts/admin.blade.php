@@ -423,6 +423,13 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.reviews*') ? 'active' : '' }}" 
+                               href="{{ route('admin.reviews.index') }}">
+                                <i class="fas fa-star"></i>
+                                Đánh giá
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.coupons*') ? 'active' : '' }}" 
                                href="{{ route('admin.coupons.index') }}">
                                 <i class="fas fa-ticket-alt"></i>

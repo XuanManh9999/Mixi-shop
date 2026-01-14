@@ -5,6 +5,6 @@ php artisan migrate:status
 # chạy lệnh
 
 php artisan serve
-
 php artisan session:table
 php artisan migrate
+php artisan db:seed

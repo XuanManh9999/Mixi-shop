@@ -493,13 +493,11 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: paymentMethodData.map((p, idx) => {
                 const labels = {
                     'vnpay': 'VNPay',
-                    'momo': 'MoMo',
-                    'cash': 'Tiền mặt',
                     'cod': 'Thanh toán khi nhận hàng',
-                    'bank_transfer': 'Chuyển khoản',
                     'unknown': 'Khác'
                 };
-                const label = labels[p.provider] || p.provider;
+                // Nếu là momo, bank_transfer, cash thì hiển thị là "Khác"
+                const label = labels[p.provider] || 'Khác';
                 const percentage = paymentMethodTotal > 0 ? ((paymentMethodTotals[idx] / paymentMethodTotal) * 100).toFixed(1) : 0;
                 return `${label} (${percentage}%)`;
             }),
