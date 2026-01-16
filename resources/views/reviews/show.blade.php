@@ -35,7 +35,7 @@
                     <li class="breadcrumb-item"><a href="{{ route('home') }}">Trang chủ</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('products.index') }}">Sản phẩm</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('products.show', $review->product->slug) }}">{{ $review->product->name }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('reviews.index', $review->product->slug) }}">Đánh giá</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('reviews.index', ['product' => $review->product->slug]) }}">Đánh giá</a></li>
                     <li class="breadcrumb-item active">Chi tiết</li>
                 </ol>
             </nav>
@@ -96,7 +96,7 @@
                     </div>
 
                     <div class="mt-4">
-                        <a href="{{ route('reviews.index', $review->product->slug) }}" class="btn btn-outline-secondary">
+                        <a href="{{ route('reviews.index', ['product' => $review->product->slug]) }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Quay lại danh sách đánh giá
                         </a>
                         <a href="{{ route('products.show', $review->product->slug) }}" class="btn btn-outline-primary">

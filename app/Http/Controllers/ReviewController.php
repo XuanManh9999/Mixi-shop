@@ -173,6 +173,11 @@ class ReviewController extends Controller
      */
     public function show(Review $review)
     {
+        // Chỉ hiển thị đánh giá đã được duyệt
+        if (!$review->is_approved) {
+            abort(404, 'Đánh giá này chưa được duyệt');
+        }
+        
         $review->load(['user', 'product', 'order']);
         return view('reviews.show', compact('review'));
     }

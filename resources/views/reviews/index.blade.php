@@ -76,7 +76,7 @@
             <!-- Filter and Sort -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="GET" action="{{ route('reviews.index', $product->slug) }}" class="row g-3">
+                    <form method="GET" action="{{ route('reviews.index', ['product' => $product->slug]) }}" class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">Lọc theo sao:</label>
                             <select name="rating" class="form-select">
@@ -101,7 +101,7 @@
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fas fa-filter me-1"></i>Lọc
                             </button>
-                            <a href="{{ route('reviews.index', $product->slug) }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('reviews.index', ['product' => $product->slug]) }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-redo me-1"></i>Reset
                             </a>
                         </div>
@@ -145,7 +145,7 @@
                                         @endif
 
                                         <div class="mt-2">
-                                            <a href="{{ route('reviews.show', $review->id) }}" class="btn btn-sm btn-outline-primary">
+                                            <a href="{{ route('reviews.show', ['review' => $review->id]) }}" class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-eye me-1"></i>Xem chi tiết
                                             </a>
                                         </div>

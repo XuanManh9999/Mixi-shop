@@ -42,7 +42,7 @@
                             <i class="fas fa-star {{ $i <= round($avgRating) ? 'text-warning' : 'text-muted' }}"></i>
                         @endfor
                         <span class="ms-2 fw-bold">{{ number_format($avgRating, 1) }}</span>
-                        <a href="{{ route('reviews.index', $product->slug) }}" class="ms-2 text-decoration-none">
+                        <a href="{{ route('reviews.index', ['product' => $product->slug]) }}" class="ms-2 text-decoration-none">
                             <small class="text-muted">({{ $reviewsCount }} đánh giá)</small>
                         </a>
                     </div>
@@ -79,7 +79,7 @@
         <hr class="my-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="h5 mb-0">Đánh giá sản phẩm</h2>
-            <a href="{{ route('reviews.index', $product->slug) }}" class="btn btn-outline-primary btn-sm">
+            <a href="{{ route('reviews.index', ['product' => $product->slug]) }}" class="btn btn-outline-primary btn-sm">
                 Xem tất cả đánh giá <i class="fas fa-arrow-right ms-1"></i>
             </a>
         </div>
@@ -111,12 +111,12 @@
                                     @endphp
                                     {{ $preview }}
                                     @if(strlen($textContent) > 150)
-                                        <a href="{{ route('reviews.show', $review->id) }}" class="text-decoration-none">... xem thêm</a>
+                                        <a href="{{ route('reviews.show', ['review' => $review->id]) }}" class="text-decoration-none">... xem thêm</a>
                                     @endif
                                 </div>
                             @endif
                             <div class="mt-2">
-                                <a href="{{ route('reviews.show', $review->id) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ route('reviews.show', ['review' => $review->id]) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-eye me-1"></i>Xem chi tiết
                                 </a>
                             </div>
