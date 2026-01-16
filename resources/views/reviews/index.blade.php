@@ -53,7 +53,7 @@
                         @endphp
                         <div class="d-flex align-items-center mb-2">
                             <div class="me-2" style="width: 80px;">
-                                <a href="{{ route('reviews.index', ['product' => $product->slug, 'rating' => $i]) }}" 
+                                <a href="{{ route('reviews.index', [$product, 'rating' => $i]) }}" 
                                    class="text-decoration-none">
                                     {{ $i }} <i class="fas fa-star text-warning"></i>
                                 </a>
@@ -76,7 +76,7 @@
             <!-- Filter and Sort -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="GET" action="{{ route('reviews.index', ['product' => $product->slug]) }}" class="row g-3">
+                    <form method="GET" action="{{ route('reviews.index', $product) }}" class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">Lọc theo sao:</label>
                             <select name="rating" class="form-select">
@@ -101,7 +101,7 @@
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fas fa-filter me-1"></i>Lọc
                             </button>
-                            <a href="{{ route('reviews.index', ['product' => $product->slug]) }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('reviews.index', $product) }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-redo me-1"></i>Reset
                             </a>
                         </div>
@@ -145,7 +145,7 @@
                                         @endif
 
                                         <div class="mt-2">
-                                            <a href="{{ route('reviews.show', ['review' => $review->id]) }}" class="btn btn-sm btn-outline-primary">
+                                            <a href="{{ route('reviews.show', $review) }}" class="btn btn-sm btn-outline-primary" style="position: relative; z-index: 10;">
                                                 <i class="fas fa-eye me-1"></i>Xem chi tiết
                                             </a>
                                         </div>
@@ -288,6 +288,38 @@
 .review-content ul, .review-content ol {
     padding-left: 20px;
     margin-bottom: 10px;
+}
+
+/* Fix button click area và hover effect - đơn giản hóa */
+a.btn-outline-primary {
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    text-decoration: none;
+    position: relative;
+    z-index: 10;
+    display: inline-block;
+}
+
+a.btn-outline-primary:hover {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+    text-decoration: none;
+    z-index: 10;
+}
+
+/* Đảm bảo không có link chồng lên nhau */
+.review-item {
+    position: relative;
+}
+
+.review-item a {
+    position: relative;
+    z-index: auto;
+}
+
+.review-item a.btn {
+    z-index: 10 !important;
 }
 </style>
 @endpush

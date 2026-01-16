@@ -25,6 +25,33 @@
     margin-top: 20px;
     margin-bottom: 10px;
 }
+
+/* Fix button click area và hover effect - đơn giản hóa */
+a.btn-outline-primary,
+a.btn-outline-secondary {
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    text-decoration: none;
+    position: relative;
+    z-index: 10;
+    display: inline-block;
+}
+
+a.btn-outline-primary:hover {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+    text-decoration: none;
+    z-index: 10;
+}
+
+a.btn-outline-secondary:hover {
+    background-color: var(--bs-secondary);
+    border-color: var(--bs-secondary);
+    color: white;
+    text-decoration: none;
+    z-index: 10;
+}
 </style>
 @endpush
 <div class="container py-4">
@@ -35,7 +62,7 @@
                     <li class="breadcrumb-item"><a href="{{ route('home') }}">Trang chủ</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('products.index') }}">Sản phẩm</a></li>
                     <li class="breadcrumb-item"><a href="{{ route('products.show', $review->product->slug) }}">{{ $review->product->name }}</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('reviews.index', ['product' => $review->product->slug]) }}">Đánh giá</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('reviews.index', $review->product) }}">Đánh giá</a></li>
                     <li class="breadcrumb-item active">Chi tiết</li>
                 </ol>
             </nav>
@@ -96,7 +123,7 @@
                     </div>
 
                     <div class="mt-4">
-                        <a href="{{ route('reviews.index', ['product' => $review->product->slug]) }}" class="btn btn-outline-secondary">
+                        <a href="{{ route('reviews.index', $review->product) }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Quay lại danh sách đánh giá
                         </a>
                         <a href="{{ route('products.show', $review->product->slug) }}" class="btn btn-outline-primary">

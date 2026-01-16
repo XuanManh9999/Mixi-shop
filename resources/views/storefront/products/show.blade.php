@@ -2,6 +2,47 @@
 
 @section('title', $product->name)
 
+@push('styles')
+<style>
+/* Đảm bảo card review không có link chồng lên nhau */
+.reviews-section .card {
+    position: relative;
+    overflow: visible;
+}
+
+.reviews-section .card-body {
+    position: relative;
+}
+
+/* Đảm bảo button có z-index cao và không bị che */
+.reviews-section .card a.btn {
+    position: relative;
+    z-index: 100 !important;
+    pointer-events: auto !important;
+    isolation: isolate;
+}
+
+/* Ngăn chặn mọi link khác trong card review */
+.reviews-section .card a:not(.btn) {
+    position: relative;
+    z-index: 1;
+}
+
+/* Đảm bảo không có overlay link */
+.reviews-section .card::before,
+.reviews-section .card::after {
+    display: none !important;
+}
+
+/* Đảm bảo button hoạt động đúng */
+.reviews-section a.btn-outline-primary {
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+</style>
+@endpush
+
 @section('content')
 <div class="container">
     <nav class="small mb-3" aria-label="breadcrumb">
@@ -42,9 +83,18 @@
                             <i class="fas fa-star {{ $i <= round($avgRating) ? 'text-warning' : 'text-muted' }}"></i>
                         @endfor
                         <span class="ms-2 fw-bold">{{ number_format($avgRating, 1) }}</span>
-                        <a href="{{ route('reviews.index', ['product' => $product->slug]) }}" class="ms-2 text-decoration-none">
+                        <a href="{{ route('reviews.index', $product) }}" class="ms-2 text-decoration-none" style="position: relative; z-index: 5;">
                             <small class="text-muted">({{ $reviewsCount }} đánh giá)</small>
                         </a>
+                    </div>
+                </div>
+            @else
+                <div class="mb-2">
+                    <div class="d-flex align-items-center">
+                        @for($i = 1; $i <= 5; $i++)
+                            <i class="fas fa-star text-muted"></i>
+                        @endfor
+                        <span class="ms-2 text-muted">Chưa có đánh giá</span>
                     </div>
                 </div>
             @endif
@@ -77,13 +127,14 @@
     @endphp
     @if($topReviews->count() > 0)
         <hr class="my-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 class="h5 mb-0">Đánh giá sản phẩm</h2>
-            <a href="{{ route('reviews.index', ['product' => $product->slug]) }}" class="btn btn-outline-primary btn-sm">
-                Xem tất cả đánh giá <i class="fas fa-arrow-right ms-1"></i>
-            </a>
-        </div>
-        <div class="row g-3">
+        <div class="reviews-section">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Đánh giá sản phẩm</h2>
+                <a href="{{ route('reviews.index', $product) }}" class="btn btn-outline-primary btn-sm" style="position: relative; z-index: 100;">
+                    Xem tất cả đánh giá <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="row g-3">
             @foreach($topReviews as $review)
                 <div class="col-md-6">
                     <div class="card">
@@ -110,13 +161,10 @@
                                         $preview = \Illuminate\Support\Str::limit($textContent, 150);
                                     @endphp
                                     {{ $preview }}
-                                    @if(strlen($textContent) > 150)
-                                        <a href="{{ route('reviews.show', ['review' => $review->id]) }}" class="text-decoration-none">... xem thêm</a>
-                                    @endif
                                 </div>
                             @endif
-                            <div class="mt-2">
-                                <a href="{{ route('reviews.show', ['review' => $review->id]) }}" class="btn btn-sm btn-outline-primary">
+                            <div class="mt-2" style="position: relative; z-index: 100;">
+                                <a href="{{ route('reviews.show', $review) }}" class="btn btn-sm btn-outline-primary" style="position: relative; z-index: 100; pointer-events: auto;">
                                     <i class="fas fa-eye me-1"></i>Xem chi tiết
                                 </a>
                             </div>
@@ -124,6 +172,16 @@
                     </div>
                 </div>
             @endforeach
+            </div>
+        </div>
+    @else
+        <hr class="my-4">
+        <div class="text-center py-5">
+            <div class="mb-3">
+                <i class="fas fa-star text-muted" style="font-size: 3rem;"></i>
+            </div>
+            <h3 class="h5 text-muted mb-2">Chưa có đánh giá nào</h3>
+            <p class="text-muted mb-0">Hãy là người đầu tiên đánh giá sản phẩm này!</p>
         </div>
     @endif
 

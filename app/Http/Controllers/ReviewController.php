@@ -5,17 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Review;
 use App\Models\Order;
 use App\Models\Product;
-use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
-    protected $cloudinaryService;
-
-    public function __construct(CloudinaryService $cloudinaryService)
-    {
-        $this->cloudinaryService = $cloudinaryService;
-    }
 
     /**
      * Hiển thị form đánh giá cho đơn hàng
@@ -191,14 +184,7 @@ class ReviewController extends Controller
             abort(403);
         }
 
-        // Xóa images từ Cloudinary nếu có
-        if ($review->images) {
-            foreach ($review->images as $imageUrl) {
-                // Extract public_id from URL if needed
-                // CloudinaryService có thể cần method để extract public_id
-            }
-        }
-
+        // Images được lưu dưới dạng base64 trong database, không cần xóa từ Cloudinary
         $review->delete();
 
         return back()->with('success', 'Đã xóa đánh giá');
