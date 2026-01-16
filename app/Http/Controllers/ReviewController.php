@@ -66,7 +66,7 @@ class ReviewController extends Controller
             'product_id' => 'required|exists:products,id',
             'order_item_id' => 'nullable|exists:order_items,id',
             'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string|max:10000', // Tăng lên để chứa HTML content
+            'comment' => 'nullable|string|max:50000', // Tăng lên để chứa HTML content với base64 images
         ], [
             'product_id.required' => 'Vui lòng chọn sản phẩm',
             'rating.required' => 'Vui lòng chọn số sao đánh giá',
@@ -101,10 +101,17 @@ class ReviewController extends Controller
         // Extract base64 image URLs from HTML comment (nếu có)
         $imageUrls = [];
         if (!empty($validated['comment'])) {
-            // Extract base64 image data URLs from HTML
-            preg_match_all('/<img[^>]+src=["\'](data:image\/[^"\']+)["\'][^>]*>/i', $validated['comment'], $matches);
-            if (!empty($matches[1])) {
-                $imageUrls = $matches[1];
+            // Extract base64 image data URLs from HTML (cải thiện regex để bắt được cả single và double quotes)
+            preg_match_all('/<img[^>]+src=(["\'])(data:image\/[^"\']+)\1[^>]*>/i', $validated['comment'], $matches);
+            if (!empty($matches[2])) {
+                $imageUrls = $matches[2];
+            }
+            // Fallback: thử với pattern khác nếu không match
+            if (empty($imageUrls)) {
+                preg_match_all('/<img[^>]+src=["\']?(data:image\/[^"\'>\s]+)["\']?[^>]*>/i', $validated['comment'], $matches);
+                if (!empty($matches[1])) {
+                    $imageUrls = $matches[1];
+                }
             }
         }
 

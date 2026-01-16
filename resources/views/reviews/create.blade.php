@@ -219,17 +219,23 @@ document.addEventListener('DOMContentLoaded', function() {
                                 return;
                             }
 
-                            // Show loading
+                            // Get current selection/cursor position
                             const range = quill.getSelection(true);
-                            quill.insertText(range.index, 'Đang xử lý ảnh...', 'user');
-                            quill.setSelection(range.index + 15);
+                            if (!range) {
+                                // If no selection, insert at the end
+                                const length = quill.getLength();
+                                range = { index: length - 1, length: 0 };
+                            }
+                            
+                            const insertIndex = range.index;
+                            
+                            // Show loading
+                            quill.insertText(insertIndex, 'Đang xử lý ảnh...', 'user');
+                            quill.setSelection(insertIndex + 15);
 
                             // Convert to base64
                             const reader = new FileReader();
                             reader.onload = function(e) {
-                                // Remove loading text
-                                quill.deleteText(range.index, 15);
-                                
                                 // Resize image if too large (max 800px width, quality 0.8)
                                 const img = new Image();
                                 img.onload = function() {
@@ -252,17 +258,25 @@ document.addEventListener('DOMContentLoaded', function() {
                                     // Convert to base64 with quality 0.8
                                     const base64 = canvas.toDataURL('image/jpeg', 0.8);
                                     
-                                    // Insert base64 image into editor
-                                    quill.insertEmbed(range.index, 'image', base64, 'user');
+                                    // Remove loading text first
+                                    quill.deleteText(insertIndex, 15);
+                                    
+                                    // Insert base64 image into editor at the same position
+                                    quill.insertEmbed(insertIndex, 'image', base64, 'user');
+                                    
+                                    // Move cursor after image
+                                    quill.setSelection(insertIndex + 1);
                                 };
                                 img.onerror = function() {
-                                    quill.deleteText(range.index, 15);
+                                    // Remove loading text on error
+                                    quill.deleteText(insertIndex, 15);
                                     alert('Không thể xử lý ảnh. Vui lòng thử lại.');
                                 };
                                 img.src = e.target.result;
                             };
                             reader.onerror = function() {
-                                quill.deleteText(range.index, 15);
+                                // Remove loading text on error
+                                quill.deleteText(insertIndex, 15);
                                 alert('Có lỗi xảy ra khi đọc file. Vui lòng thử lại.');
                             };
                             reader.readAsDataURL(file);
@@ -287,7 +301,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Allow empty comment
                     commentTextarea.value = '';
                 } else {
+                    // Đảm bảo HTML content có chứa images nếu có
                     commentTextarea.value = htmlContent;
+                    
+                    // Debug: log để kiểm tra
+                    console.log('HTML Content:', htmlContent);
+                    console.log('Has images:', htmlContent.includes('<img'));
                 }
             }
         });
