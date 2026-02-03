@@ -16,13 +16,13 @@ class CloudinaryService
 
     public function __construct()
     {
-        // Hard-coded config for testing
+        // Sử dụng config từ .env
         $config = [
             'cloud' => [
-                'cloud_name' => 'dpbo17rbt',
-                'api_key' => '923369223654775',
-                'api_secret' => '7szIKlRno-q8XTeuFI2YIeLuZ4',
-                'secure' => true
+                'cloud_name' => config('cloudinary.cloud_name'),
+                'api_key' => config('cloudinary.api_key'),
+                'api_secret' => config('cloudinary.api_secret'),
+                'secure' => config('cloudinary.secure', true)
             ]
         ];
 
